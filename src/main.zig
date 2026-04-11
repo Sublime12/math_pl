@@ -1,26 +1,168 @@
 const std = @import("std");
 const math_pl = @import("math_pl");
 
+const eql = std.ascii.eqlIgnoreCase;
+
 pub fn main() !void {
-    // Prints to stderr, ignoring potential errors.
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    const source_code =
+        \\let fact = fn n ->
+        \\    if n == 0
+        \\    then 1
+        \\    else n * self_fn (n - 1)
+    ;
+    var buffer: [150]u8 = undefined;
+
+    const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
+
+    var lexer = Lexer.init(source_code, tokenStr);
+
+    while (lexer.next()) {
+        std.debug.print("Token: {}, value: {s}\n", .{ lexer.token, lexer.name.items });
+        if (lexer.token == .TokenEnd) break;
+    }
 }
 
-test "simple test" {
-    const gpa = std.testing.allocator;
-    var list: std.ArrayList(i32) = .empty;
-    defer list.deinit(gpa); // Try commenting this out and see if zig detects the memory leak!
-    try list.append(gpa, 42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+const Lexer = struct {
+    content: []const u8,
+    token: TokenKind,
+    cursor: Cursor,
+    name: std.ArrayList(u8),
 
-test "fuzz example" {
-    const Context = struct {
-        fn testOne(context: @This(), input: []const u8) anyerror!void {
-            _ = context;
-            // Try passing `--fuzz` to `zig build test` and see if it manages to fail this test case!
-            try std.testing.expect(!std.mem.eql(u8, "canyoufindme", input));
+    pub fn init(content: []const u8, emptyTokenStr: std.ArrayList(u8)) Lexer {
+        return .{
+            .content = content,
+            .token = .TokenNone,
+            .cursor = .Empty,
+            .name = emptyTokenStr,
+        };
+    }
+
+    pub fn next(l: *Lexer) bool {
+        l.trim_left();
+
+        const x_opt = l.next_char();
+        if (x_opt == null) {
+            l.token = .TokenEnd;
+            return true;
         }
+
+        const x = x_opt.?;
+        switch (x) {
+            '=' => {
+                if (l.current_char()) |n_char| {
+                    if (n_char == '=') {
+                        _ = l.next_char();
+                        l.name.clearRetainingCapacity();
+                        l.name.appendAssumeCapacity(x);
+                        l.token = .TokenEql;
+                        return true;
+                    }
+                }
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenAssign;
+                return true;
+            },
+            '(' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenOParen;
+                return true;
+            },
+            ')' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenCParen;
+                return true;
+            },
+            else => {},
+        }
+
+        l.name.clearRetainingCapacity();
+        l.name.appendAssumeCapacity(x);
+        while (l.current_char()) |c| {
+            if (!std.ascii.isAlphanumeric(c)) break;
+            l.name.appendAssumeCapacity(c);
+            _ = l.next_char();
+        }
+
+        if (eql("let", l.name.items)) {
+            l.token = .TokenLet;
+            return true;
+        } else {
+            l.token = .TokenId;
+            return true;
+        }
+
+        return false;
+    }
+
+    pub fn trim_left(l: *Lexer) void {
+        while (std.ascii.isWhitespace(l.current_char() orelse return)) {
+            _ = l.next_char();
+        }
+    }
+
+    fn next_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos >= l.content.len) return null;
+
+        const x = l.current_char().?;
+        l.cursor.pos += 1;
+        l.cursor.col += 1;
+
+        if (isLn(x)) {
+            l.cursor.bol = l.cursor.pos;
+            l.cursor.row += 1;
+            l.cursor.col = 0;
+        }
+        return x;
+    }
+
+    fn current_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos >= l.content.len) return null;
+        return l.content[l.cursor.pos];
+    }
+
+    fn peek_next_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos + 1 >= l.content.len) return null;
+        return l.content[l.cursor.pos + 1];
+    }
+
+    fn isLn(c: u8) bool {
+        return c == '\n';
+    }
+};
+
+const TokenKind = enum {
+    TokenLet,
+    TokenId,
+    TokenIf,
+    TokenEql,
+    TokenAssign,
+    TokenSelfFn,
+    TokenThen,
+    TokenNone,
+    TokenOParen,
+    TokenCParen,
+    TokenEnd,
+};
+
+const Cursor = struct {
+    const Self = @This();
+
+    // absolute position in str
+    pos: usize,
+    // beginning of the current line
+    bol: usize,
+    // what column the cursor is at
+    col: usize,
+    // what row the cursor is at (can also be (pos - bol)
+    row: usize,
+
+    pub const Empty: Self = .{
+        .pos = 0,
+        .bol = 0,
+        .col = 0,
+        .row = 0,
     };
-    try std.testing.fuzz(Context{}, Context.testOne, .{});
-}
+};
