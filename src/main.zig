@@ -54,6 +54,7 @@ const Lexer = struct {
                         _ = l.next_char();
                         l.name.clearRetainingCapacity();
                         l.name.appendAssumeCapacity(x);
+                        l.name.appendAssumeCapacity(n_char);
                         l.token = .TokenEql;
                         return true;
                     }
@@ -61,6 +62,22 @@ const Lexer = struct {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
                 l.token = .TokenAssign;
+                return true;
+            },
+            '-' => {
+                if (l.current_char()) |n_char| {
+                    if (n_char == '>') {
+                        _ = l.next_char();
+                        l.name.clearRetainingCapacity();
+                        l.name.appendAssumeCapacity(x);
+                        l.name.appendAssumeCapacity(n_char);
+                        l.token = .TokenArrow;
+                        return true;
+                    }
+                }
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenMinus;
                 return true;
             },
             '(' => {
@@ -78,23 +95,32 @@ const Lexer = struct {
             else => {},
         }
 
-        l.name.clearRetainingCapacity();
-        l.name.appendAssumeCapacity(x);
-        while (l.current_char()) |c| {
-            if (!std.ascii.isAlphanumeric(c)) break;
-            l.name.appendAssumeCapacity(c);
-            _ = l.next_char();
-        }
+        if (isSymbol(x)) {
+            l.name.clearRetainingCapacity();
+            l.name.appendAssumeCapacity(x);
+            while (l.current_char()) |c| {
+                if (!std.ascii.isAlphanumeric(c)) break;
+                l.name.appendAssumeCapacity(c);
+                _ = l.next_char();
+            }
 
-        if (eql("let", l.name.items)) {
-            l.token = .TokenLet;
-            return true;
-        } else {
-            l.token = .TokenId;
-            return true;
+            if (eql("let", l.name.items)) {
+                l.token = .TokenLet;
+                return true;
+            } else if (eql("if", l.name.items)) {
+                l.token = .TokenIf;
+                return true;
+            } else {
+                l.token = .TokenId;
+                return true;
+            }
         }
 
         return false;
+    }
+
+    fn isSymbol(x: u8) bool {
+        return std.ascii.isAlphanumeric(x) or x == '_';
     }
 
     pub fn trim_left(l: *Lexer) void {
@@ -144,6 +170,8 @@ const TokenKind = enum {
     TokenNone,
     TokenOParen,
     TokenCParen,
+    TokenArrow,
+    TokenMinus,
     TokenEnd,
 };
 
