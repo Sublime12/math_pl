@@ -39,13 +39,30 @@ const ArithTag = enum {
 };
 
 const ArithExpr = union(ArithTag) {
-    binOp: f32,
+    binOp: BinOp,
     constant: f32,
     var_: []const u8,
 };
 
-const BoolTag = enum { constant };
+const BinOp = struct {
+    lhs: *ArithExpr,
+    rhs: *ArithExpr,
+};
 
+const BinCmpExpr = struct {
+    lhs: *BoolExpr,
+    rhs: *BoolExpr,
+};
+
+const BoolTag = enum {
+    constant,
+    eql,
+    gt,
+    lt,
+};
 const BoolExpr = union(BoolTag) {
     constant: bool,
+    eql: BinCmpExpr,
+    gt: BinCmpExpr,
+    lt: BinCmpExpr,
 };
