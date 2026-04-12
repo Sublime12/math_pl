@@ -1,0 +1,191 @@
+const std = @import("std");
+
+const eql = std.ascii.eqlIgnoreCase;
+
+pub const Lexer = struct {
+    content: []const u8,
+    token: TokenKind,
+    cursor: Cursor,
+    name: std.ArrayList(u8),
+
+    pub fn init(content: []const u8, emptyTokenStr: std.ArrayList(u8)) Lexer {
+        return .{
+            .content = content,
+            .token = .TokenNone,
+            .cursor = .Empty,
+            .name = emptyTokenStr,
+        };
+    }
+
+    pub fn next(l: *Lexer) bool {
+        l.trim_left();
+
+        const x_opt = l.next_char();
+        if (x_opt == null) {
+            l.token = .TokenEnd;
+            return true;
+        }
+
+        const x = x_opt.?;
+        switch (x) {
+            '=' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                const n_char = l.current_char();
+                if (n_char == '=') {
+                    _ = l.next_char();
+                    l.name.appendAssumeCapacity(n_char.?);
+                    l.token = .TokenEql;
+                    return true;
+                }
+                l.token = .TokenAssign;
+                return true;
+            },
+            '-' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                const n_char = l.current_char();
+                if (n_char == '>') {
+                    _ = l.next_char();
+                    l.name.appendAssumeCapacity(n_char.?);
+                    l.token = .TokenArrow;
+                    return true;
+                }
+                l.token = .TokenMinus;
+                return true;
+            },
+            '(' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenOParen;
+                return true;
+            },
+            ')' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenCParen;
+                return true;
+            },
+            '*' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenProd;
+                return true;
+            },
+            else => {},
+        }
+
+        if (isSymbol(x)) {
+            l.name.clearRetainingCapacity();
+            l.name.appendAssumeCapacity(x);
+            while (l.current_char()) |c| {
+                if (!isSymbol(c)) break;
+                l.name.appendAssumeCapacity(c);
+                _ = l.next_char();
+            }
+
+            if (eql("let", l.name.items)) {
+                l.token = .TokenLet;
+                return true;
+            } else if (eql("if", l.name.items)) {
+                l.token = .TokenIf;
+                return true;
+            } else if (eql("self_fn", l.name.items)) {
+                l.token = .TokenSelfFn;
+                return true;
+            } else if (eql("fn", l.name.items)) {
+                l.token = .TokenFn;
+                return true;
+            } else if (eql("then", l.name.items)) {
+                l.token = .TokenThen;
+                return true;
+            } else if (eql("else", l.name.items)) {
+                l.token = .TokenElse;
+                return true;
+            } else {
+                l.token = .TokenId;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    fn isSymbol(x: u8) bool {
+        return std.ascii.isAlphanumeric(x) or x == '_';
+    }
+
+    pub fn trim_left(l: *Lexer) void {
+        while (std.ascii.isWhitespace(l.current_char() orelse return)) {
+            _ = l.next_char();
+        }
+    }
+
+    fn next_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos >= l.content.len) return null;
+
+        const x = l.current_char().?;
+        l.cursor.pos += 1;
+        l.cursor.col += 1;
+
+        if (isLn(x)) {
+            l.cursor.bol = l.cursor.pos;
+            l.cursor.row += 1;
+            l.cursor.col = 0;
+        }
+        return x;
+    }
+
+    fn current_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos >= l.content.len) return null;
+        return l.content[l.cursor.pos];
+    }
+
+    fn peek_next_char(l: *Lexer) ?u8 {
+        if (l.cursor.pos + 1 >= l.content.len) return null;
+        return l.content[l.cursor.pos + 1];
+    }
+
+    fn isLn(c: u8) bool {
+        return c == '\n';
+    }
+};
+
+const TokenKind = enum {
+    TokenLet,
+    TokenId,
+    TokenIf,
+    TokenEql,
+    TokenAssign,
+    TokenSelfFn,
+    TokenThen,
+    TokenNone,
+    TokenOParen,
+    TokenCParen,
+    TokenArrow,
+    TokenMinus,
+    TokenProd,
+    TokenFn,
+    TokenElse,
+    TokenEnd,
+};
+
+const Cursor = struct {
+    const Self = @This();
+
+    // absolute position in str
+    pos: usize,
+    // beginning of the current line
+    bol: usize,
+    // what column the cursor is at
+    col: usize,
+    // what row the cursor is at (can also be (pos - bol)
+    row: usize,
+
+    pub const Empty: Self = .{
+        .pos = 0,
+        .bol = 0,
+        .col = 0,
+        .row = 0,
+    };
+};
