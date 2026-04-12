@@ -63,5 +63,5 @@ test "simple fn expression" {
     try args.append(allocator, "c");
     const fn_expr: FnExpr = FnExpr.init("fact", args, .{ .if_ = if_expr });
 
-    std.debug.print("if expr: {}\n", .{fn_expr});
+    std.debug.print("fn fact: {}\n", .{fn_expr});
 }
