@@ -17,7 +17,6 @@ pub fn main() !void {
     var lexer = Lexer.init(source_code, tokenStr);
 
     while (lexer.next()) {
-        // std.debug.print("Token: {}, value: {s}\n", .{ lexer.token, lexer.name.items });
         std.debug.print("Token: {t:<15} value: {s:<20}\n", .{ lexer.token, lexer.name.items });
         if (lexer.token == .TokenEnd) break;
     }
