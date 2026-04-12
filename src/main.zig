@@ -110,6 +110,9 @@ const Lexer = struct {
             } else if (eql("if", l.name.items)) {
                 l.token = .TokenIf;
                 return true;
+            } else if (eql("self_fn", l.name.items)) {
+                l.token = .TokenSelfFn;
+                return true;
             } else {
                 l.token = .TokenId;
                 return true;
