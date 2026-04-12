@@ -185,7 +185,7 @@ const TokenKind = enum {
     TokenArrow,
     TokenMinus,
     TokenProd,
-    TokenFn, 
+    TokenFn,
     TokenElse,
     TokenEnd,
 };
