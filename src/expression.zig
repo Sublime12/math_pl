@@ -20,15 +20,15 @@ const ExprTag = enum {
     bool_,
 };
 
-const Expr = union(ExprTag) {
+pub const Expr = union(ExprTag) {
     if_: IfExpr,
     arith: ArithExpr,
     bool_: BoolExpr,
 };
 
-const IfExpr = struct {
+pub const IfExpr = struct {
     eval: *BoolExpr,
-    if_: *Expr,
+    then: *Expr,
     else_: *Expr,
 };
 
@@ -38,30 +38,33 @@ const ArithTag = enum {
     var_,
 };
 
-const ArithExpr = union(ArithTag) {
+pub const ArithExpr = union(ArithTag) {
     binOp: BinOp,
     constant: f32,
     var_: []const u8,
 };
 
-const BinOp = struct {
+pub const BinOp = struct {
     lhs: *ArithExpr,
     rhs: *ArithExpr,
 };
 
-const BinCmpExpr = struct {
-    lhs: *BoolExpr,
-    rhs: *BoolExpr,
+pub const BinCmpExpr = struct {
+    lhs: *const BoolExpr,
+    rhs: *const BoolExpr,
 };
 
 const BoolTag = enum {
+    var_,
     constant,
     eql,
     gt,
     lt,
 };
-const BoolExpr = union(BoolTag) {
-    constant: bool,
+
+pub const BoolExpr = union(BoolTag) {
+    var_: []const u8,
+    constant: f32,
     eql: BinCmpExpr,
     gt: BinCmpExpr,
     lt: BinCmpExpr,

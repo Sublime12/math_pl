@@ -42,7 +42,7 @@ pub fn build(b: *std.Build) void {
     const exe_tests = b.addTest(.{
         .root_module = exe.root_module,
     });
-    // b.installArtifact(exe_tests);
+    b.installArtifact(exe_tests);
 
     const run_exe_tests = b.addRunArtifact(exe_tests);
 
