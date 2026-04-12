@@ -113,6 +113,15 @@ const Lexer = struct {
             } else if (eql("self_fn", l.name.items)) {
                 l.token = .TokenSelfFn;
                 return true;
+            } else if (eql("fn", l.name.items)) {
+                l.token = .TokenFn;
+                return true;
+            } else if (eql("then", l.name.items)) {
+                l.token = .TokenThen;
+                return true;
+            } else if (eql("else", l.name.items)) {
+                l.token = .TokenElse;
+                return true;
             } else {
                 l.token = .TokenId;
                 return true;
@@ -176,6 +185,8 @@ const TokenKind = enum {
     TokenArrow,
     TokenMinus,
     TokenProd,
+    TokenFn, 
+    TokenElse,
     TokenEnd,
 };
 
