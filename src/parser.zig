@@ -44,8 +44,11 @@ pub const Parser = struct {
                 try args.append(alloc, try alloc.dupe(u8, l.name.items));
                 _ = l.next();
             }
+            l.expect(.TokenArrow);
+            _ = l.next();
+
             const body = try alloc.create(Expr);
-            body.* = parseBody(l, alloc);
+            body.* = try parseExpr(l, alloc);
 
             const fn_expr: FnExpr = .{
                 .name = id,
@@ -53,15 +56,18 @@ pub const Parser = struct {
                 .body = body,
             };
             return .{ .fn_def = fn_expr };
+        } else if (l.token == .TokenIf) {
+            _ = l.next();
+            const bool_expr = try alloc.create(Expr);
+            bool_expr.* = parseBool(l, alloc);
         }
         unreachable;
     }
 
-    fn parseBody(l: *Lexer, alloc: Allocator) Expr {
+    fn parseBool(l: *Lexer, alloc: Allocator) Expr {
         _ = l;
         _ = alloc;
-        const expr: Expr = .{ .arith = .{ .constant = 0 } };
-        return expr;
+        return .{ .bool_ = .{ .constant = 0 } };
     }
 };
 
