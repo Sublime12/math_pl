@@ -5,6 +5,7 @@ const eql = std.ascii.eqlIgnoreCase;
 pub const Lexer = struct {
     content: []const u8,
     token: TokenKind,
+    integer_value: ?i32,
     cursor: Cursor,
     name: std.ArrayList(u8),
 
@@ -14,6 +15,7 @@ pub const Lexer = struct {
             .token = .TokenNone,
             .cursor = .Empty,
             .name = emptyTokenStr,
+            .integer_value = null,
         };
     }
 
@@ -84,6 +86,7 @@ pub const Lexer = struct {
                 _ = l.next_char();
             }
 
+            // std.debug.print("XXXXXXX: {s}\n", .{l.name.items});
             if (eql("let", l.name.items)) {
                 l.token = .TokenLet;
                 return true;
@@ -102,12 +105,18 @@ pub const Lexer = struct {
             } else if (eql("else", l.name.items)) {
                 l.token = .TokenElse;
                 return true;
+            } else if (std.ascii.isDigit(l.name.items[0])) {
+                const number = std.fmt.parseInt(i32, l.name.items, 10) catch {
+                    std.debug.panic("Expected number, found: {s}", .{l.name.items});
+                };
+                l.integer_value = number;
+                l.token = .TokenInt;
+                return true;
             } else {
                 l.token = .TokenId;
                 return true;
             }
         }
-
         return false;
     }
 
@@ -167,6 +176,7 @@ const TokenKind = enum {
     TokenProd,
     TokenFn,
     TokenElse,
+    TokenInt,
     TokenEnd,
 };
 

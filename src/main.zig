@@ -30,15 +30,15 @@ pub fn main() !void {
         });
         if (lexer.token == .TokenEnd) break;
     }
-    const allocator = std.heap.page_allocator;
+    // const allocator = std.heap.page_allocator;
 
-    var args = std.ArrayList([]const u8).empty;
-    try args.append(allocator, "a");
-    try args.append(allocator, "b");
-    try args.append(allocator, "c");
-
-    const simple_fn_expr = FnExpr.init("simple_fn_expr", args, .{ .bool_ = .{ .constant = 0 } });
-    _ = simple_fn_expr;
+    // var args = std.ArrayList([]const u8).empty;
+    // try args.append(allocator, "a");
+    // try args.append(allocator, "b");
+    // try args.append(allocator, "c");
+    //
+    // const simple_fn_expr = FnExpr.init("simple_fn_expr", args, .{ .bool_ = .{ .constant = 0 } });
+    // _ = simple_fn_expr;
 }
 
 test "simple fn expression" {
