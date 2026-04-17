@@ -18,12 +18,19 @@ const ExprTag = enum {
     if_,
     arith,
     bool_,
+    fn_call,
 };
 
 pub const Expr = union(ExprTag) {
     if_: IfExpr,
     arith: ArithExpr,
     bool_: BoolExpr,
+    fn_call: FnCallExpr,
+};
+
+const FnCallExpr = struct {
+    name: std.ArrayList(u8),
+    args: std.ArrayList(Expr),
 };
 
 pub const IfExpr = struct {
