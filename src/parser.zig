@@ -29,7 +29,6 @@ pub const Parser = struct {
     }
 
     fn parseExpr(l: *Lexer, alloc: Allocator) !Expr {
-        std.debug.print("TOKENNNN: {}=========================\n", .{l.token});
         if (l.token == .TokenLet) {
             // return a function
             _ = l.next();
