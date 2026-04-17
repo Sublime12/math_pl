@@ -7,6 +7,7 @@ const FnExpr = expression_pkg.FnExpr;
 const BoolExpr = expression_pkg.BoolExpr;
 const Expr = expression_pkg.Expr;
 const IfExpr = expression_pkg.IfExpr;
+const Parser = parser_pkg.Parser;
 
 const eql = std.ascii.eqlIgnoreCase;
 
@@ -30,7 +31,12 @@ pub fn main() !void {
         });
         if (lexer.token == .TokenEnd) break;
     }
-    // const allocator = std.heap.page_allocator;
+
+    const alloc = std.heap.page_allocator;
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    std.debug.print("expr: {}", .{expr});
 
     // var args = std.ArrayList([]const u8).empty;
     // try args.append(allocator, "a");
@@ -61,7 +67,7 @@ test "simple fn expression" {
     try args.append(allocator, "a");
     try args.append(allocator, "b");
     try args.append(allocator, "c");
-    const fn_expr: FnExpr = FnExpr.init("fact", args, .{ .if_ = if_expr });
+    const fn_expr: FnExpr = FnExpr.init("fact", args, &.{ .if_ = if_expr });
 
     std.debug.print("fn fact: {}\n", .{fn_expr});
 }

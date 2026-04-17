@@ -1,6 +1,69 @@
 const std = @import("std");
 
+const expression_pkg = @import("expression.zig");
+
+const Expr = expression_pkg.Expr;
+const FnExpr = expression_pkg.FnExpr;
+const Allocator = std.mem.Allocator;
+
 const eql = std.ascii.eqlIgnoreCase;
+const panic = std.debug.panic;
+
+pub const Parser = struct {
+    const Self = @This();
+    lexer: *Lexer,
+    alloc: Allocator,
+
+    pub fn init(l: *Lexer, alloc: Allocator) Self {
+        return .{
+            .lexer = l,
+            .alloc = alloc,
+        };
+    }
+
+    pub fn parse(self: *Self) !Expr {
+        self.lexer.cursor = .empty;
+        _ = self.lexer.next();
+
+        return parseExpr(self.lexer, self.alloc);
+    }
+
+    fn parseExpr(l: *Lexer, alloc: Allocator) !Expr {
+        if (l.token == .TokenLet) {
+            // return a function
+            _ = l.next();
+            l.expect(.TokenId);
+            const id = try alloc.dupe(u8, l.name.items);
+            _ = l.next();
+            l.expect(.TokenAssign);
+            _ = l.next();
+            l.expect(.TokenFn);
+            _ = l.next();
+            var args = std.ArrayList([]const u8).empty;
+            while (l.token == .TokenId) {
+                try args.append(alloc, try alloc.dupe(u8, l.name.items));
+                _ = l.next();
+            }
+            const body = try alloc.create(Expr);
+            body.* = parseBody(l, alloc);
+
+            const fn_expr: FnExpr = .{
+                .name = id,
+                .args = args,
+                .body = body,
+            };
+            return .{ .fn_def = fn_expr };
+        }
+        unreachable;
+    }
+
+    fn parseBody(l: *Lexer, alloc: Allocator) Expr {
+        _ = l;
+        _ = alloc;
+        const expr: Expr = .{ .arith = .{ .constant = 0 } };
+        return expr;
+    }
+};
 
 pub const Lexer = struct {
     content: []const u8,
@@ -13,10 +76,16 @@ pub const Lexer = struct {
         return .{
             .content = content,
             .token = .TokenNone,
-            .cursor = .Empty,
+            .cursor = .empty,
             .name = emptyTokenStr,
             .integer_value = null,
         };
+    }
+
+    pub fn expect(l: *Lexer, expected: TokenKind) void {
+        if (l.token != expected) {
+            panic("expected this {}, found this {} at {}:{}", .{ expected, l.token, l.cursor.row, l.cursor.col });
+        }
     }
 
     pub fn next(l: *Lexer) bool {
@@ -192,7 +261,7 @@ const Cursor = struct {
     // what row the cursor is at (can also be (pos - bol)
     row: usize,
 
-    pub const Empty: Self = .{
+    pub const empty: Self = .{
         .pos = 0,
         .bol = 0,
         .col = 0,

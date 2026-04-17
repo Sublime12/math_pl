@@ -3,9 +3,9 @@ const std = @import("std");
 pub const FnExpr = struct {
     name: []const u8,
     args: std.ArrayList([]const u8),
-    body: Expr,
+    body: *const Expr,
 
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: Expr) FnExpr {
+    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
         return .{
             .name = name,
             .args = args,
@@ -19,6 +19,7 @@ const ExprTag = enum {
     arith,
     bool_,
     fn_call,
+    fn_def,
 };
 
 pub const Expr = union(ExprTag) {
@@ -26,6 +27,7 @@ pub const Expr = union(ExprTag) {
     arith: ArithExpr,
     bool_: BoolExpr,
     fn_call: FnCallExpr,
+    fn_def: FnExpr,
 };
 
 const FnCallExpr = struct {
