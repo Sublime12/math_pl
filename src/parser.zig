@@ -29,6 +29,7 @@ pub const Parser = struct {
     }
 
     fn parseExpr(l: *Lexer, alloc: Allocator) !Expr {
+        std.debug.print("TOKENNNN: {}=========================\n", .{l.token});
         if (l.token == .TokenLet) {
             // return a function
             _ = l.next();
@@ -58,13 +59,12 @@ pub const Parser = struct {
             return .{ .fn_def = fn_expr };
         } else if (l.token == .TokenIf) {
             _ = l.next();
-            const bool_expr = try alloc.create(Expr);
-            bool_expr.* = parseBool(l, alloc);
+            return parseIf(l, alloc);
         }
         unreachable;
     }
 
-    fn parseBool(l: *Lexer, alloc: Allocator) Expr {
+    fn parseIf(l: *Lexer, alloc: Allocator) Expr {
         _ = l;
         _ = alloc;
         return .{ .bool_ = .{ .constant = 0 } };
