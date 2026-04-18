@@ -84,7 +84,7 @@ pub const IfExpr = struct {
 };
 
 const ArithTag = enum {
-    binOp,
+    prod,
     constant,
     var_,
 };
@@ -92,13 +92,13 @@ const ArithTag = enum {
 pub const ArithExpr = union(ArithTag) {
     const Self = @This();
 
-    binOp: BinOp,
+    prod: BinOp,
     constant: i32,
     var_: []const u8,
 
     pub fn print(self: Self) void {
         switch (self) {
-            .binOp => |expr| expr.print(),
+            .prod => |expr| expr.print(),
             .constant => |expr| std.debug.print("{}", .{expr}),
             .var_=> |expr| std.debug.print("{s}", .{expr}),
         }
@@ -107,10 +107,14 @@ pub const ArithExpr = union(ArithTag) {
 
 pub const BinOp = struct {
     const Self = @This();
-    lhs: *ArithExpr,
-    rhs: *ArithExpr,
+    lhs: *Expr,
+    rhs: *Expr,
 
-    pub fn print(self: Self) void { _ = self; unreachable; }
+    pub fn print(self: Self) void { 
+        self.lhs.print();
+        std.debug.print(" ", .{});
+        self.rhs.print();
+    }
 };
 
 pub const BinCmpExpr = struct {

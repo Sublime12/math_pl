@@ -61,8 +61,16 @@ pub const Parser = struct {
             return parseIf(l, alloc);
         } else if (l.token == .TokenId) {
             const name = try alloc.dupe(u8, l.name.items);
+            const name_expr = try alloc.create(Expr);
+            name_expr.* =  .{ .arith = .{.var_ = name} };
             _ = l.next();
-            return .{ .arith = .{.var_ = name} };
+            if (l.token == .TokenProd) {
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs }} };
+            }
+            return name_expr.*;
         } else if (l.token == .TokenInt) { 
             const value = l.integer_value.?; 
             _ = l.next();

@@ -16,7 +16,7 @@ pub fn main() !void {
         \\let fact = fn n ->
         \\    if (n == 0)
         \\    then 1
-        \\    else n * self_fn (n - 1)
+        \\    else n * n 
     ;
     var buffer: [150]u8 = undefined;
 
@@ -35,7 +35,6 @@ pub fn main() !void {
     const alloc = std.heap.page_allocator;
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
-
 
     expr.print();
     std.debug.print("\n", .{});
