@@ -28,7 +28,7 @@ pub const Parser = struct {
         return parseExpr(self.lexer, self.alloc);
     }
 
-    fn parseExpr(l: *Lexer, alloc: Allocator) !Expr {
+    fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         if (l.token == .TokenLet) {
             // return a function
             _ = l.next();
@@ -59,14 +59,61 @@ pub const Parser = struct {
         } else if (l.token == .TokenIf) {
             _ = l.next();
             return parseIf(l, alloc);
+        } else if (l.token == .TokenId) {
+            const name = try alloc.dupe(u8, l.name.items);
+            _ = l.next();
+            return .{ .arith = .{.var_ = name} };
+        } else if (l.token == .TokenInt) { 
+            const value = l.integer_value.?; 
+            _ = l.next();
+            return .{ .arith = .{ .constant = value }};
         }
-        unreachable;
+
+        panic(
+            "Panic with token {}, value: {s}",
+            .{ l.token, l.name.items },
+        );
     }
 
-    fn parseIf(l: *Lexer, alloc: Allocator) Expr {
-        _ = l;
-        _ = alloc;
-        return .{ .bool_ = .{ .constant = 0 } };
+    fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
+        l.expect(.TokenOParen);
+        _ = l.next();
+        const eval = try alloc.create(Expr);
+        eval.* = try parseBool(l, alloc);
+        _ = l.expect(.TokenCParen);
+        _ = l.next();
+        _ = l.expect(.TokenThen);
+        _ = l.next();
+        const then = try alloc.create(Expr);
+        then.* = try parseExpr(l, alloc);
+        l.expect(.TokenElse);
+        _ = l.next();
+        const else_ = try alloc.create(Expr);
+        else_.* = try parseExpr(l, alloc);
+
+        return .{
+            .if_ = .{
+                .eval = eval,
+                .then = then,
+                .else_ = else_,
+            },
+        };
+    }
+
+    fn parseBool(l: *Lexer, alloc: Allocator) !Expr {
+        if (l.token == .TokenId) {
+            const lhs = try alloc.create(Expr);
+            lhs.* = try parseExpr(l, alloc);
+            l.expect(.TokenEql);
+            _ = l.next();
+            const rhs = try alloc.create(Expr);
+            rhs.* = try parseExpr(l, alloc);
+            return .{
+                .bool_ = .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
+            };
+        }
+
+        panic("Not yet implemented for functions", .{});
     }
 };
 

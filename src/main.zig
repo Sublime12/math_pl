@@ -14,7 +14,7 @@ const eql = std.ascii.eqlIgnoreCase;
 pub fn main() !void {
     const source_code =
         \\let fact = fn n ->
-        \\    if n == 0
+        \\    if (n == 0)
         \\    then 1
         \\    else n * self_fn (n - 1)
     ;
@@ -36,8 +36,9 @@ pub fn main() !void {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    std.debug.print("expr: {}", .{expr});
 
+    expr.print();
+    std.debug.print("\n", .{});
     // var args = std.ArrayList([]const u8).empty;
     // try args.append(allocator, "a");
     // try args.append(allocator, "b");
@@ -49,12 +50,12 @@ pub fn main() !void {
 
 test "simple fn expression" {
     const allocator = std.testing.allocator;
-    var eval: BoolExpr = .{
+    var eval: Expr = .{ .bool_ = .{
         .eql = .{
-            .lhs = &.{ .var_ = "n" },
-            .rhs = &.{ .constant = 0 },
+            .lhs = &.{ .arith = .{ .var_ = "n" } },
+            .rhs = &.{ .arith = .{ .constant = 0 } },
         },
-    };
+    } };
     var then: Expr = .{
         .arith = .{ .constant = 1 },
     };
