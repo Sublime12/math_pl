@@ -103,7 +103,7 @@ pub const ArithExpr = union(ArithTag) {
 
     pub fn print(self: Self) void {
         switch (self) {
-            .prod => |expr| expr.print(),
+            .prod => |expr| expr.print("*"),
             .constant => |expr| std.debug.print("{}", .{expr}),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
         }
@@ -115,9 +115,9 @@ pub const BinOp = struct {
     lhs: *Expr,
     rhs: *Expr,
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, str: []const u8) void {
         self.lhs.print();
-        std.debug.print(" ", .{});
+        std.debug.print(" {s} ", .{str});
         self.rhs.print();
     }
 };
@@ -128,9 +128,9 @@ pub const BinCmpExpr = struct {
     lhs: *const Expr,
     rhs: *const Expr,
 
-    pub fn print(self: Self) void {
+    pub fn print(self: Self, op: []const u8) void {
         self.lhs.print();
-        std.debug.print(" ", .{});
+        std.debug.print(" {s} ", .{op});
         self.rhs.print();
     }
 };
@@ -157,18 +157,15 @@ pub const BoolExpr = union(BoolTag) {
             .var_ => |expr| std.debug.print("{s}", .{expr}),
             .constant => |expr| std.debug.print("{}", .{expr}),
             .eql => |expr| {
-                std.debug.print("(== ", .{});
-                expr.print();
+                expr.print("==");
                 std.debug.print(")", .{});
             },
             .gt => |expr| {
-                std.debug.print("(= ", .{});
-                expr.print();
+                expr.print("<");
                 std.debug.print(")", .{});
             },
             .lt => |expr| {
-                std.debug.print("(= ", .{});
-                expr.print();
+                expr.print(">");
                 std.debug.print(")", .{});
             },
         }
