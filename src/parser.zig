@@ -62,19 +62,37 @@ pub const Parser = struct {
         } else if (l.token == .TokenId) {
             const name = try alloc.dupe(u8, l.name.items);
             const name_expr = try alloc.create(Expr);
-            name_expr.* =  .{ .arith = .{.var_ = name} };
+            name_expr.* = .{ .arith = .{ .var_ = name } };
             _ = l.next();
+            std.debug.print("XXXXXXX {}\n", .{l.token});
             if (l.token == .TokenProd) {
                 _ = l.next();
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
-                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs }} };
+                // rhs.print();
+                // std.debug.print(", TOKEN = {}", .{l.token});
+                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
             }
             return name_expr.*;
-        } else if (l.token == .TokenInt) { 
-            const value = l.integer_value.?; 
+        } else if (l.token == .TokenInt) {
+            const value = l.integer_value.?;
             _ = l.next();
-            return .{ .arith = .{ .constant = value }};
+            return .{ .arith = .{ .constant = value } };
+        } else if (l.token == .TokenFn or l.token == .TokenSelfFn) {
+            const name = try alloc.dupe(u8, l.name.items);
+            _ = l.next();
+            l.expect(.TokenOParen);
+            _ = l.next();
+            var args: std.ArrayList(Expr) = .empty;
+            while (l.token != .TokenCParen) {
+                const arg = try parseExpr(l, alloc);
+                try args.append(alloc, arg);
+                l.expect(.TokenComma);
+                _ = l.next();
+            }
+            l.expect(.TokenCParen);
+            _ = l.next();
+            return .{ .fn_call = .{ .name = name, .args = args } };
         }
 
         panic(
@@ -144,7 +162,14 @@ pub const Lexer = struct {
 
     pub fn expect(l: *Lexer, expected: TokenKind) void {
         if (l.token != expected) {
-            panic("expected this {}, found this {} at {}:{}", .{ expected, l.token, l.cursor.row, l.cursor.col });
+            panic("expected this {}, found this {} at {}:{}, name: {s}, integer {?}", .{
+                expected,
+                l.token,
+                l.cursor.row,
+                l.cursor.col,
+                l.name.items,
+                l.integer_value,
+            });
         }
     }
 
@@ -201,6 +226,12 @@ pub const Lexer = struct {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
                 l.token = .TokenProd;
+                return true;
+            },
+            ',' => {
+                l.name.clearRetainingCapacity();
+                l.name.appendAssumeCapacity(x);
+                l.token = .TokenComma;
                 return true;
             },
             else => {},
@@ -306,6 +337,7 @@ const TokenKind = enum {
     TokenFn,
     TokenElse,
     TokenInt,
+    TokenComma,
     TokenEnd,
 };
 

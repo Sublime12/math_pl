@@ -56,7 +56,7 @@ pub const Expr = union(ExprTag) {
 const FnCallExpr = struct {
     const Self = @This();
 
-    name: std.ArrayList(u8),
+    name: []const u8,
     args: std.ArrayList(Expr),
 
     pub fn print(self: Self) void {
@@ -100,7 +100,7 @@ pub const ArithExpr = union(ArithTag) {
         switch (self) {
             .prod => |expr| expr.print(),
             .constant => |expr| std.debug.print("{}", .{expr}),
-            .var_=> |expr| std.debug.print("{s}", .{expr}),
+            .var_ => |expr| std.debug.print("{s}", .{expr}),
         }
     }
 };
@@ -110,7 +110,7 @@ pub const BinOp = struct {
     lhs: *Expr,
     rhs: *Expr,
 
-    pub fn print(self: Self) void { 
+    pub fn print(self: Self) void {
         self.lhs.print();
         std.debug.print(" ", .{});
         self.rhs.print();
@@ -151,7 +151,7 @@ pub const BoolExpr = union(BoolTag) {
         switch (self) {
             .var_ => |expr| std.debug.print("{s}", .{expr}),
             .constant => |expr| std.debug.print("{}", .{expr}),
-            .eql=> |expr| {
+            .eql => |expr| {
                 std.debug.print("(== ", .{});
                 expr.print();
                 std.debug.print(")", .{});

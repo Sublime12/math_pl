@@ -16,7 +16,7 @@ pub fn main() !void {
         \\let fact = fn n ->
         \\    if (n == 0)
         \\    then 1
-        \\    else n * n 
+        \\    else n * self_fn (n * 12 , ) 
     ;
     var buffer: [150]u8 = undefined;
 
