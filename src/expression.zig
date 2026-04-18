@@ -60,8 +60,13 @@ const FnCallExpr = struct {
     args: std.ArrayList(Expr),
 
     pub fn print(self: Self) void {
-        _ = self;
-        unreachable;
+        std.debug.print("{s} (", .{self.name});
+        for (self.args.items) |arg| {
+            std.debug.print(" ", .{});
+            arg.print();
+            std.debug.print(",", .{});
+        }
+        std.debug.print(")", .{});
     }
 };
 
