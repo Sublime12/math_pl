@@ -25,7 +25,7 @@ pub const FnExpr = struct {
     }
 };
 
-const ExprTag = enum {
+pub const ExprTag = enum {
     if_,
     arith,
     bool_,
@@ -50,6 +50,10 @@ pub const Expr = union(ExprTag) {
             .fn_call => |expr| expr.print(),
             .fn_def => |expr| expr.print(),
         }
+    }
+
+    pub fn tag(self: Self) ExprTag {
+        return @as(ExprTag, self);
     }
 };
 
@@ -147,7 +151,7 @@ pub const BoolExpr = union(BoolTag) {
     const Self = @This();
 
     var_: []const u8,
-    constant: f32,
+    constant: bool,
     eql: BinCmpExpr,
     gt: BinCmpExpr,
     lt: BinCmpExpr,

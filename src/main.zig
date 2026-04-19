@@ -1,6 +1,7 @@
 const std = @import("std");
 const parser_pkg = @import("parser.zig");
 const expression_pkg = @import("expression.zig");
+const execute_pkg = @import("execute.zig");
 
 const Lexer = parser_pkg.Lexer;
 const FnExpr = expression_pkg.FnExpr;
@@ -10,14 +11,17 @@ const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
 
 const eql = std.ascii.eqlIgnoreCase;
+const execute = execute_pkg.eval;
 
 pub fn main() !void {
-    const source_code =
-        \\let fact = fn n ->
-        \\    if (n == 0)
-        \\    then 1
-        \\    else n * self_fn (n * 12 , ) 
-    ;
+    // const source_code =
+    //     \\let fact = fn n ->
+    //     \\    if (n == 0)
+    //     \\    then 1
+    //     \\    else n * self_fn (n * 12 , ) 
+    // ;
+    
+    const source_code = "12 == 1";
     var buffer: [150]u8 = undefined;
 
     const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
@@ -38,6 +42,9 @@ pub fn main() !void {
 
     expr.print();
     std.debug.print("\n", .{});
+
+    const new_expr = execute(expr);
+    new_expr.print();
     // var args = std.ArrayList([]const u8).empty;
     // try args.append(allocator, "a");
     // try args.append(allocator, "b");
