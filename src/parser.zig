@@ -29,83 +29,89 @@ pub const Parser = struct {
     }
 
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
-        if (l.token == .TokenLet) {
-            // return a function
-            _ = l.next();
-            l.expect(.TokenId);
-            const id = try alloc.dupe(u8, l.name.items);
-            _ = l.next();
-            l.expect(.TokenAssign);
-            _ = l.next();
-            l.expect(.TokenFn);
-            _ = l.next();
-            var args = std.ArrayList([]const u8).empty;
-            while (l.token == .TokenId) {
-                try args.append(alloc, try alloc.dupe(u8, l.name.items));
+        switch (l.token) {
+            .TokenLet => {
                 _ = l.next();
-            }
-            l.expect(.TokenArrow);
-            _ = l.next();
+                l.expect(.TokenId);
+                const id = try alloc.dupe(u8, l.name.items);
+                _ = l.next();
+                l.expect(.TokenAssign);
+                _ = l.next();
+                l.expect(.TokenFn);
+                _ = l.next();
+                var args = std.ArrayList([]const u8).empty;
+                while (l.token == .TokenId) {
+                    try args.append(alloc, try alloc.dupe(u8, l.name.items));
+                    _ = l.next();
+                }
+                l.expect(.TokenArrow);
+                _ = l.next();
 
-            const body = try alloc.create(Expr);
-            body.* = try parseExpr(l, alloc);
+                const body = try alloc.create(Expr);
+                body.* = try parseExpr(l, alloc);
 
-            const fn_expr: FnExpr = .{
-                .name = id,
-                .args = args,
-                .body = body,
-            };
-            return .{ .fn_def = fn_expr };
-        } else if (l.token == .TokenIf) {
-            _ = l.next();
-            return parseIf(l, alloc);
-        } else if (l.token == .TokenId) {
-            const name = try alloc.dupe(u8, l.name.items);
-            const name_expr = try alloc.create(Expr);
-            name_expr.* = .{ .arith = .{ .var_ = name } };
-            _ = l.next();
-            std.debug.print("XXXXXXX {}\n", .{l.token});
-            if (l.token == .TokenProd) {
+                const fn_expr: FnExpr = .{
+                    .name = id,
+                    .args = args,
+                    .body = body,
+                };
+                return .{ .fn_def = fn_expr };
+            },
+            .TokenIf => {
                 _ = l.next();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
-                // rhs.print();
-                // std.debug.print(", TOKEN = {}", .{l.token});
-                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
-            }
-            return name_expr.*;
-        } else if (l.token == .TokenInt) {
-            const value = l.integer_value.?;
-            const name_expr = try alloc.create(Expr);
-            name_expr.* = .{ .arith = .{ .constant = value } };
-            _ = l.next();
-            if (l.token == .TokenEql) {
+                return parseIf(l, alloc);
+            },
+            .TokenId => {
+                const name = try alloc.dupe(u8, l.name.items);
+                const name_expr = try alloc.create(Expr);
+                name_expr.* = .{ .arith = .{ .var_ = name } };
                 _ = l.next();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
-                return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
-            } else if (l.token == .TokenProd) {
+                std.debug.print("XXXXXXX {}\n", .{l.token});
+                if (l.token == .TokenProd) {
+                    _ = l.next();
+                    const rhs = try alloc.create(Expr);
+                    rhs.* = try parseExpr(l, alloc);
+                    // rhs.print();
+                    // std.debug.print(", TOKEN = {}", .{l.token});
+                    return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+                }
+                return name_expr.*;
+            },
+            .TokenInt => {
+                const value = l.integer_value.?;
+                const name_expr = try alloc.create(Expr);
+                name_expr.* = .{ .arith = .{ .constant = value } };
                 _ = l.next();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
-                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
-            }
-            return .{ .arith = .{ .constant = value } };
-        } else if (l.token == .TokenFn or l.token == .TokenSelfFn) {
-            const name = try alloc.dupe(u8, l.name.items);
-            _ = l.next();
-            l.expect(.TokenOParen);
-            _ = l.next();
-            var args: std.ArrayList(Expr) = .empty;
-            while (l.token != .TokenCParen) {
-                const arg = try parseExpr(l, alloc);
-                try args.append(alloc, arg);
-                l.expect(.TokenComma);
+                if (l.token == .TokenEql) {
+                    _ = l.next();
+                    const rhs = try alloc.create(Expr);
+                    rhs.* = try parseExpr(l, alloc);
+                    return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
+                } else if (l.token == .TokenProd) {
+                    _ = l.next();
+                    const rhs = try alloc.create(Expr);
+                    rhs.* = try parseExpr(l, alloc);
+                    return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+                }
+                return .{ .arith = .{ .constant = value } };
+            },
+            .TokenFn, .TokenSelfFn => {
+                const name = try alloc.dupe(u8, l.name.items);
                 _ = l.next();
-            }
-            l.expect(.TokenCParen);
-            _ = l.next();
-            return .{ .fn_call = .{ .name = name, .args = args } };
+                l.expect(.TokenOParen);
+                _ = l.next();
+                var args: std.ArrayList(Expr) = .empty;
+                while (l.token != .TokenCParen) {
+                    const arg = try parseExpr(l, alloc);
+                    try args.append(alloc, arg);
+                    l.expect(.TokenComma);
+                    _ = l.next();
+                }
+                l.expect(.TokenCParen);
+                _ = l.next();
+                return .{ .fn_call = .{ .name = name, .args = args } };
+            },
+            else => {},
         }
 
         panic(
@@ -349,7 +355,7 @@ pub const Lexer = struct {
 };
 
 const TokenKind = enum {
-    // Cmp ops 
+    // Cmp ops
     TokenEql,
     TokenAssign,
 
@@ -361,7 +367,7 @@ const TokenKind = enum {
     TokenOParen,
     TokenCParen,
 
-    // keywords 
+    // keywords
     TokenArrow,
     TokenFn,
     TokenElse,
@@ -370,7 +376,7 @@ const TokenKind = enum {
     TokenSelfFn,
     TokenThen,
 
-    // primary 
+    // primary
     TokenInt,
     TokenId,
 

@@ -14,14 +14,14 @@ const eql = std.ascii.eqlIgnoreCase;
 const execute = execute_pkg.eval;
 
 pub fn main() !void {
-    // const source_code =
-    //     \\let fact = fn n ->
-    //     \\    if (n == 0)
-    //     \\    then 1
-    //     \\    else n * self_fn (n * 12 , ) 
-    // ;
-    
-    const source_code = "24 ==  1 * 2 * 3 * 4";
+    const source_code =
+        \\let fact = fn n ->
+        \\    if (n == 0)
+        \\    then 1
+        \\    else n * self_fn (n * 12 , )
+    ;
+
+    // const source_code = "24 ==  1 * 2 * 3 * 4";
     var buffer: [150]u8 = undefined;
 
     const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
@@ -40,15 +40,14 @@ pub fn main() !void {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    std.debug.print("xxxxx: ", .{});
     expr.print();
     std.debug.print("\n", .{});
 
-    const new_expr = execute(expr);
-
-    std.debug.print("new expr: ", .{});
-    new_expr.print();
-    std.debug.print("\n", .{});
+    // const new_expr = execute(expr);
+    //
+    // std.debug.print("new expr: ", .{});
+    // new_expr.print();
+    // std.debug.print("\n", .{});
     // var args = std.ArrayList([]const u8).empty;
     // try args.append(allocator, "a");
     // try args.append(allocator, "b");
