@@ -28,34 +28,38 @@ pub const Parser = struct {
         return parseExpr(self.lexer, self.alloc);
     }
 
+    fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
+        l.expect(.TokenId);
+        const id = try alloc.dupe(u8, l.name.items);
+        _ = l.next();
+        l.expect(.TokenAssign);
+        _ = l.next();
+        l.expect(.TokenFn);
+        _ = l.next();
+        var args = std.ArrayList([]const u8).empty;
+        while (l.token == .TokenId) {
+            try args.append(alloc, try alloc.dupe(u8, l.name.items));
+            _ = l.next();
+        }
+        l.expect(.TokenArrow);
+        _ = l.next();
+
+        const body = try alloc.create(Expr);
+        body.* = try parseExpr(l, alloc);
+
+        const fn_expr: FnExpr = .{
+            .name = id,
+            .args = args,
+            .body = body,
+        };
+        return .{ .fn_def = fn_expr };
+    }
+
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .TokenLet => {
                 _ = l.next();
-                l.expect(.TokenId);
-                const id = try alloc.dupe(u8, l.name.items);
-                _ = l.next();
-                l.expect(.TokenAssign);
-                _ = l.next();
-                l.expect(.TokenFn);
-                _ = l.next();
-                var args = std.ArrayList([]const u8).empty;
-                while (l.token == .TokenId) {
-                    try args.append(alloc, try alloc.dupe(u8, l.name.items));
-                    _ = l.next();
-                }
-                l.expect(.TokenArrow);
-                _ = l.next();
-
-                const body = try alloc.create(Expr);
-                body.* = try parseExpr(l, alloc);
-
-                const fn_expr: FnExpr = .{
-                    .name = id,
-                    .args = args,
-                    .body = body,
-                };
-                return .{ .fn_def = fn_expr };
+                return parseFnDef(l, alloc);
             },
             .TokenIf => {
                 _ = l.next();
