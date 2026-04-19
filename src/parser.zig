@@ -55,6 +55,21 @@ pub const Parser = struct {
         return .{ .fn_def = fn_expr };
     }
 
+    fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
+        const name = try alloc.dupe(u8, l.name.items);
+        const name_expr = try alloc.create(Expr);
+        name_expr.* = .{ .arith = .{ .var_ = name } };
+        _ = l.next();
+        std.debug.print("XXXXXXX {}\n", .{l.token});
+        if (l.token == .TokenProd) {
+            _ = l.next();
+            const rhs = try alloc.create(Expr);
+            rhs.* = try parseExpr(l, alloc);
+            return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+        }
+        return name_expr.*;
+    }
+
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .TokenLet => {
@@ -66,20 +81,7 @@ pub const Parser = struct {
                 return parseIf(l, alloc);
             },
             .TokenId => {
-                const name = try alloc.dupe(u8, l.name.items);
-                const name_expr = try alloc.create(Expr);
-                name_expr.* = .{ .arith = .{ .var_ = name } };
-                _ = l.next();
-                std.debug.print("XXXXXXX {}\n", .{l.token});
-                if (l.token == .TokenProd) {
-                    _ = l.next();
-                    const rhs = try alloc.create(Expr);
-                    rhs.* = try parseExpr(l, alloc);
-                    // rhs.print();
-                    // std.debug.print(", TOKEN = {}", .{l.token});
-                    return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
-                }
-                return name_expr.*;
+                return parseBeginWithId(l, alloc);
             },
             .TokenInt => {
                 const value = l.integer_value.?;
