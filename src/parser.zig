@@ -70,6 +70,25 @@ pub const Parser = struct {
         return name_expr.*;
     }
 
+    fn parseBeginWithInt(l: *Lexer, alloc: Allocator) !Expr {
+        const value = l.integer_value.?;
+        const name_expr = try alloc.create(Expr);
+        name_expr.* = .{ .arith = .{ .constant = value } };
+        _ = l.next();
+        if (l.token == .TokenEql) {
+            _ = l.next();
+            const rhs = try alloc.create(Expr);
+            rhs.* = try parseExpr(l, alloc);
+            return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
+        } else if (l.token == .TokenProd) {
+            _ = l.next();
+            const rhs = try alloc.create(Expr);
+            rhs.* = try parseExpr(l, alloc);
+            return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+        }
+        return .{ .arith = .{ .constant = value } };
+    }
+
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .TokenLet => {
@@ -84,22 +103,7 @@ pub const Parser = struct {
                 return parseBeginWithId(l, alloc);
             },
             .TokenInt => {
-                const value = l.integer_value.?;
-                const name_expr = try alloc.create(Expr);
-                name_expr.* = .{ .arith = .{ .constant = value } };
-                _ = l.next();
-                if (l.token == .TokenEql) {
-                    _ = l.next();
-                    const rhs = try alloc.create(Expr);
-                    rhs.* = try parseExpr(l, alloc);
-                    return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
-                } else if (l.token == .TokenProd) {
-                    _ = l.next();
-                    const rhs = try alloc.create(Expr);
-                    rhs.* = try parseExpr(l, alloc);
-                    return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
-                }
-                return .{ .arith = .{ .constant = value } };
+                return parseBeginWithInt(l, alloc);
             },
             .TokenFn, .TokenSelfFn => {
                 const name = try alloc.dupe(u8, l.name.items);
