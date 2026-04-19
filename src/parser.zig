@@ -188,6 +188,11 @@ pub const Lexer = struct {
         }
     }
 
+    fn clearAppendSymbol(l: *Lexer, x: u8) void {
+        l.name.clearRetainingCapacity();
+        l.name.appendAssumeCapacity(x);
+    }
+
     pub fn next(l: *Lexer) bool {
         l.trim_left();
 
@@ -200,8 +205,7 @@ pub const Lexer = struct {
         const x = x_opt.?;
         switch (x) {
             '=' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 const n_char = l.current_char();
                 if (n_char == '=') {
                     _ = l.next_char();
@@ -215,8 +219,7 @@ pub const Lexer = struct {
                 return true;
             },
             '-' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 const n_char = l.current_char();
                 if (n_char == '>') {
                     _ = l.next_char();
@@ -230,29 +233,25 @@ pub const Lexer = struct {
                 return true;
             },
             '(' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 l.tokenType = .Paren;
                 l.token = .TokenOParen;
                 return true;
             },
             ')' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 l.tokenType = .Paren;
                 l.token = .TokenCParen;
                 return true;
             },
             '*' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 l.tokenType = .ArithOp;
                 l.token = .TokenProd;
                 return true;
             },
             ',' => {
-                l.name.clearRetainingCapacity();
-                l.name.appendAssumeCapacity(x);
+                l.clearAppendSymbol(x);
                 l.tokenType = .Other;
                 l.token = .TokenComma;
                 return true;
@@ -261,15 +260,13 @@ pub const Lexer = struct {
         }
 
         if (isSymbol(x)) {
-            l.name.clearRetainingCapacity();
-            l.name.appendAssumeCapacity(x);
+            l.clearAppendSymbol(x);
             while (l.current_char()) |c| {
                 if (!isSymbol(c)) break;
                 l.name.appendAssumeCapacity(c);
                 _ = l.next_char();
             }
 
-            // std.debug.print("XXXXXXX: {s}\n", .{l.name.items});
             if (eql("let", l.name.items)) {
                 l.token = .TokenLet;
                 l.tokenType = .Keyword;
