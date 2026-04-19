@@ -27,6 +27,13 @@ pub fn eval(expr: Expr) Expr {
 pub fn eval_arith(expr: ArithExpr) Expr {
     switch (expr) {
         .constant => |constant| return .{ .arith = .{ .constant = constant }},
+        .prod => |prod| {
+            const lhs = eval(prod.lhs.*);
+            const rhs = eval(prod.rhs.*);
+            assert(lhs.tag() == .arith);
+            assert(rhs.tag() == .arith);
+            return .{ .arith = .{ .constant = lhs.arith.constant * rhs.arith.constant }};
+        },
         else => {},
     }
     panic("arith not fully implemented", .{});

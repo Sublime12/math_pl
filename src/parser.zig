@@ -84,6 +84,11 @@ pub const Parser = struct {
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
+            } else if (l.token == .TokenProd) {
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
             }
             return .{ .arith = .{ .constant = value } };
         } else if (l.token == .TokenFn or l.token == .TokenSelfFn) {
