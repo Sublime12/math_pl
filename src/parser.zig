@@ -159,6 +159,7 @@ pub const Parser = struct {
 pub const Lexer = struct {
     content: []const u8,
     token: TokenKind,
+    tokenType: ?TokenType,
     integer_value: ?i32,
     cursor: Cursor,
     name: std.ArrayList(u8),
@@ -170,6 +171,7 @@ pub const Lexer = struct {
             .cursor = .empty,
             .name = emptyTokenStr,
             .integer_value = null,
+            .tokenType = null,
         };
     }
 
@@ -205,9 +207,11 @@ pub const Lexer = struct {
                     _ = l.next_char();
                     l.name.appendAssumeCapacity(n_char.?);
                     l.token = .TokenEql;
+                    l.tokenType = .BinOp;
                     return true;
                 }
                 l.token = .TokenAssign;
+                l.tokenType = .Other;
                 return true;
             },
             '-' => {
@@ -218,32 +222,38 @@ pub const Lexer = struct {
                     _ = l.next_char();
                     l.name.appendAssumeCapacity(n_char.?);
                     l.token = .TokenArrow;
+                    l.tokenType = .Keyword;
                     return true;
                 }
+                l.tokenType = .BinOp;
                 l.token = .TokenMinus;
                 return true;
             },
             '(' => {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
+                l.tokenType = .Paren;
                 l.token = .TokenOParen;
                 return true;
             },
             ')' => {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
+                l.tokenType = .Paren;
                 l.token = .TokenCParen;
                 return true;
             },
             '*' => {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
+                l.tokenType = .ArithOp;
                 l.token = .TokenProd;
                 return true;
             },
             ',' => {
                 l.name.clearRetainingCapacity();
                 l.name.appendAssumeCapacity(x);
+                l.tokenType = .Other;
                 l.token = .TokenComma;
                 return true;
             },
@@ -262,21 +272,27 @@ pub const Lexer = struct {
             // std.debug.print("XXXXXXX: {s}\n", .{l.name.items});
             if (eql("let", l.name.items)) {
                 l.token = .TokenLet;
+                l.tokenType = .Keyword;
                 return true;
             } else if (eql("if", l.name.items)) {
                 l.token = .TokenIf;
+                l.tokenType = .Keyword;
                 return true;
             } else if (eql("self_fn", l.name.items)) {
                 l.token = .TokenSelfFn;
+                l.tokenType = .Keyword;
                 return true;
             } else if (eql("fn", l.name.items)) {
                 l.token = .TokenFn;
+                l.tokenType = .Keyword;
                 return true;
             } else if (eql("then", l.name.items)) {
                 l.token = .TokenThen;
+                l.tokenType = .Keyword;
                 return true;
             } else if (eql("else", l.name.items)) {
                 l.token = .TokenElse;
+                l.tokenType = .Keyword;
                 return true;
             } else if (std.ascii.isDigit(l.name.items[0])) {
                 const number = std.fmt.parseInt(i32, l.name.items, 10) catch {
@@ -284,9 +300,11 @@ pub const Lexer = struct {
                 };
                 l.integer_value = number;
                 l.token = .TokenInt;
+                l.tokenType = .Primary;
                 return true;
             } else {
                 l.token = .TokenId;
+                l.tokenType = .Primary;
                 return true;
             }
         }
@@ -334,24 +352,45 @@ pub const Lexer = struct {
 };
 
 const TokenKind = enum {
-    TokenLet,
-    TokenId,
-    TokenIf,
+    // Cmp ops 
     TokenEql,
     TokenAssign,
-    TokenSelfFn,
-    TokenThen,
-    TokenNone,
-    TokenOParen,
-    TokenCParen,
-    TokenArrow,
+
+    // Arith ops
     TokenMinus,
     TokenProd,
+
+    // parentheses
+    TokenOParen,
+    TokenCParen,
+
+    // keywords 
+    TokenArrow,
     TokenFn,
     TokenElse,
+    TokenLet,
+    TokenIf,
+    TokenSelfFn,
+    TokenThen,
+
+    // primary 
     TokenInt,
+    TokenId,
+
+    // others
     TokenComma,
+    TokenNone,
     TokenEnd,
+};
+
+const TokenType = enum {
+    ArithOp,
+    BinOp,
+    CmpOp,
+    Primary,
+    Paren,
+    Keyword,
+    Other,
 };
 
 const Cursor = struct {

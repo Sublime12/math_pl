@@ -21,7 +21,7 @@ pub fn main() !void {
     //     \\    else n * self_fn (n * 12 , ) 
     // ;
     
-    const source_code = "24 == 2 * 3 * 4";
+    const source_code = "24 ==  1 * 2 * 3 * 4";
     var buffer: [150]u8 = undefined;
 
     const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
