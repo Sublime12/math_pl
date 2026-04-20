@@ -16,9 +16,9 @@ const execute = execute_pkg.eval;
 pub fn main() !void {
     const source_code =
         \\let fact = fn n ->
-        \\    if (n == 0)
+        \\    if (n == 2 * 1 - 3 )
         \\    then 1
-        \\    else n * self_fn (n * 12 , )
+        \\    else n * self_fn (n - 12, )
     ;
 
     // const source_code = "24 ==  1 * 2 * 3 * 4";
@@ -29,9 +29,10 @@ pub fn main() !void {
     var lexer = Lexer.init(source_code, tokenStr);
 
     while (lexer.next()) {
-        std.debug.print("Token: {t:<15} value: {s:<20}\n", .{
+        std.debug.print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
             lexer.token,
             if (lexer.token != .TokenEnd) lexer.name.items else "$$",
+            lexer.tokenType,
         });
         if (lexer.token == .TokenEnd) break;
     }

@@ -4,6 +4,8 @@ const expression_pkg = @import("expression.zig");
 
 const Expr = expression_pkg.Expr;
 const FnExpr = expression_pkg.FnExpr;
+const ArithExpr = expression_pkg.ArithExpr;
+const BoolExpr = expression_pkg.BoolExpr;
 const Allocator = std.mem.Allocator;
 
 const eql = std.ascii.eqlIgnoreCase;
@@ -55,17 +57,40 @@ pub const Parser = struct {
         return .{ .fn_def = fn_expr };
     }
 
+    /// can be an arith expr a + 1 - 3
+    /// or a bool expr a = 1
+    /// or a function call a(b, c, d)
     fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
         const name = try alloc.dupe(u8, l.name.items);
         const name_expr = try alloc.create(Expr);
         name_expr.* = .{ .arith = .{ .var_ = name } };
         _ = l.next();
         std.debug.print("XXXXXXX {}\n", .{l.token});
-        if (l.token == .TokenProd) {
-            _ = l.next();
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+        switch (l.tokenType) {
+            .ArithOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: ArithExpr = switch (token) {
+                    .TokenProd => .{ .prod = .{ .lhs = name_expr, .rhs = rhs } },
+                    .TokenMinus => .{ .minus = .{ .lhs = name_expr, .rhs = rhs } },
+                    else => panic("not implemented for {}", .{token}),
+                };
+                return .{ .arith = op };
+            },
+            .BoolOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: BoolExpr = switch (token) {
+                    .TokenEql => .{ .eql = .{ .lhs = name_expr, .rhs = rhs } },
+                    else => panic("token : {}", .{token}),
+                };
+                return .{ .bool_ = op };
+            },
+            else => panic("tokentype not implemented", .{}),
         }
         return name_expr.*;
     }
@@ -85,6 +110,11 @@ pub const Parser = struct {
             const rhs = try alloc.create(Expr);
             rhs.* = try parseExpr(l, alloc);
             return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
+        } else if (l.token == .TokenMinus) {
+            _ = l.next();
+            const rhs = try alloc.create(Expr);
+            rhs.* = try parseExpr(l, alloc);
+            return .{ .arith = .{ .minus = .{ .lhs = name_expr, .rhs = rhs } } };
         }
         return .{ .arith = .{ .constant = value } };
     }
@@ -134,7 +164,7 @@ pub const Parser = struct {
         l.expect(.TokenOParen);
         _ = l.next();
         const eval = try alloc.create(Expr);
-        eval.* = try parseBool(l, alloc);
+        eval.* = try parseExpr(l, alloc);
         _ = l.expect(.TokenCParen);
         _ = l.next();
         _ = l.expect(.TokenThen);
@@ -175,7 +205,7 @@ pub const Parser = struct {
 pub const Lexer = struct {
     content: []const u8,
     token: TokenKind,
-    tokenType: ?TokenType,
+    tokenType: TokenType,
     integer_value: ?i32,
     cursor: Cursor,
     name: std.ArrayList(u8),
@@ -187,7 +217,7 @@ pub const Lexer = struct {
             .cursor = .empty,
             .name = emptyTokenStr,
             .integer_value = null,
-            .tokenType = null,
+            .tokenType = .None,
         };
     }
 
@@ -211,9 +241,13 @@ pub const Lexer = struct {
 
     fn setToken(l: *Lexer, token: TokenKind) void {
         switch (token) {
-            .TokenEql, .TokenMinus, .TokenProd => |t| {
+            .TokenMinus, .TokenProd => |t| {
                 l.token = t;
-                l.tokenType = .BinOp;
+                l.tokenType = .ArithOp;
+            },
+            .TokenEql => |t| {
+                l.token = t;
+                l.tokenType = .BoolOp;
             },
             .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn => |t| {
                 l.token = t;
@@ -408,12 +442,13 @@ const TokenKind = enum {
 
 const TokenType = enum {
     ArithOp,
-    BinOp,
+    BoolOp,
     CmpOp,
     Primary,
     Paren,
     Keyword,
     Other,
+    None,
 };
 
 const Cursor = struct {
