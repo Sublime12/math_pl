@@ -90,7 +90,7 @@ pub const Parser = struct {
                 };
                 return .{ .bool_ = op };
             },
-            else => panic("tokentype not implemented", .{}),
+            else => {},
         }
         return name_expr.*;
     }
@@ -100,21 +100,33 @@ pub const Parser = struct {
         const name_expr = try alloc.create(Expr);
         name_expr.* = .{ .arith = .{ .constant = value } };
         _ = l.next();
-        if (l.token == .TokenEql) {
-            _ = l.next();
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{ .bool_ = .{ .eql = .{ .lhs = name_expr, .rhs = rhs } } };
-        } else if (l.token == .TokenProd) {
-            _ = l.next();
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{ .arith = .{ .prod = .{ .lhs = name_expr, .rhs = rhs } } };
-        } else if (l.token == .TokenMinus) {
-            _ = l.next();
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{ .arith = .{ .minus = .{ .lhs = name_expr, .rhs = rhs } } };
+
+        std.debug.print("parse int {}\n", .{name_expr});
+        switch (l.tokenType) {
+            .BoolOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: BoolExpr = switch (token) {
+                    .TokenEql => .{ .eql = .{ .lhs = name_expr, .rhs = rhs } },
+                    else => panic("panic bool begin with", .{}),
+                };
+                return .{ .bool_ = op };
+            },
+            .ArithOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: ArithExpr = switch (token) {
+                    .TokenProd => .{ .prod = .{ .lhs = name_expr, .rhs = rhs } },
+                    .TokenMinus => .{ .minus = .{ .lhs = name_expr, .rhs = rhs } },
+                    else => panic("panic bool begin with", .{}),
+                };
+                return .{ .arith = op };
+            },
+            else => {},
         }
         return .{ .arith = .{ .constant = value } };
     }
