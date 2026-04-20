@@ -253,8 +253,6 @@ pub const Lexer = struct {
                     _ = l.next_char();
                     l.name.appendAssumeCapacity(n_char.?);
                     l.setToken(.TokenEql);
-                    // l.token = .TokenEql;
-                    // l.tokenType = .BinOp;
                     return true;
                 }
                 l.setToken(.TokenAssign);
@@ -267,41 +265,29 @@ pub const Lexer = struct {
                     _ = l.next_char();
                     l.name.appendAssumeCapacity(n_char.?);
                     l.setToken(.TokenArrow);
-                    // l.token = .TokenArrow;
-                    // l.tokenType = .Keyword;
                     return true;
                 }
                 l.setToken(.TokenMinus);
-                // l.tokenType = .BinOp;
-                // l.token = .TokenMinus;
                 return true;
             },
             '(' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenOParen);
-                // l.tokenType = .Paren;
-                // l.token = .TokenOParen;
                 return true;
             },
             ')' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenCParen);
-                // l.tokenType = .Paren;
-                // l.token = .TokenCParen;
                 return true;
             },
             '*' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenProd);
-                // l.tokenType = .ArithOp;
-                // l.token = .TokenProd;
                 return true;
             },
             ',' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenComma);
-                // l.tokenType = .Other;
-                // l.token = .TokenComma;
                 return true;
             },
             else => {},
@@ -317,33 +303,21 @@ pub const Lexer = struct {
 
             if (eql("let", l.name.items)) {
                 l.setToken(.TokenLet);
-                // l.token = .TokenLet;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (eql("if", l.name.items)) {
                 l.setToken(.TokenIf);
-                // l.token = .TokenIf;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (eql("self_fn", l.name.items)) {
                 l.setToken(.TokenSelfFn);
-                // l.token = .TokenSelfFn;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (eql("fn", l.name.items)) {
                 l.setToken(.TokenFn);
-                // l.token = .TokenFn;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (eql("then", l.name.items)) {
                 l.setToken(.TokenThen);
-                // l.token = .TokenThen;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (eql("else", l.name.items)) {
                 l.setToken(.TokenElse);
-                // l.token = .TokenElse;
-                // l.tokenType = .Keyword;
                 return true;
             } else if (std.ascii.isDigit(l.name.items[0])) {
                 const number = std.fmt.parseInt(i32, l.name.items, 10) catch {
@@ -351,13 +325,9 @@ pub const Lexer = struct {
                 };
                 l.integer_value = number;
                 l.setToken(.TokenInt);
-                // l.token = .TokenInt;
-                // l.tokenType = .Primary;
                 return true;
             } else {
                 l.setToken(.TokenId);
-                // l.token = .TokenId;
-                // l.tokenType = .Primary;
                 return true;
             }
         }
