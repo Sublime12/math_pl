@@ -95,6 +95,7 @@ pub const IfExpr = struct {
 const ArithTag = enum {
     prod,
     minus,
+    plus,
     constant,
     var_,
 };
@@ -104,6 +105,7 @@ pub const ArithExpr = union(ArithTag) {
 
     prod: BinOp,
     minus: BinOp,
+    plus: BinOp,
     constant: i32,
     var_: []const u8,
 
@@ -111,6 +113,7 @@ pub const ArithExpr = union(ArithTag) {
         switch (self) {
             .prod => |expr| expr.print("*"),
             .minus => |expr| expr.print("-"),
+            .plus => |expr| expr.print("+"),
             .constant => |expr| std.debug.print("{}", .{expr}),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
         }

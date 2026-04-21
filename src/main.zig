@@ -18,7 +18,7 @@ pub fn main() !void {
         \\let fact = fn n ->
         \\    if (n == 2 * 1 - 3 )
         \\    then 1
-        \\    else n * self_fn (n - 12 * 3, )
+        \\    else n * self_fn (n - 12 * 3 + 8, )
     ;
 
     // const source_code = "24 ==  1 * 2 * 3 * 4";

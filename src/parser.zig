@@ -75,6 +75,7 @@ pub const Parser = struct {
                 const op: ArithExpr = switch (token) {
                     .TokenProd => .{ .prod = .{ .lhs = name_expr, .rhs = rhs } },
                     .TokenMinus => .{ .minus = .{ .lhs = name_expr, .rhs = rhs } },
+                    .TokenPlus => .{ .plus = .{ .lhs = name_expr, .rhs = rhs } },
                     else => panic("not implemented for {}", .{token}),
                 };
                 return .{ .arith = op };
@@ -122,6 +123,7 @@ pub const Parser = struct {
                 const op: ArithExpr = switch (token) {
                     .TokenProd => .{ .prod = .{ .lhs = name_expr, .rhs = rhs } },
                     .TokenMinus => .{ .minus = .{ .lhs = name_expr, .rhs = rhs } },
+                    .TokenPlus => .{ .plus = .{ .lhs = name_expr, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
                 return .{ .arith = op };
@@ -253,7 +255,7 @@ pub const Lexer = struct {
 
     fn setToken(l: *Lexer, token: TokenKind) void {
         switch (token) {
-            .TokenMinus, .TokenProd => |t| {
+            .TokenMinus, .TokenProd, .TokenPlus => |t| {
                 l.token = t;
                 l.tokenType = .ArithOp;
             },
@@ -329,6 +331,11 @@ pub const Lexer = struct {
             '*' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenProd);
+                return true;
+            },
+            '+' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.TokenPlus);
                 return true;
             },
             ',' => {
@@ -427,6 +434,7 @@ const TokenKind = enum {
 
     // Arith ops
     TokenMinus,
+    TokenPlus,
     TokenProd,
 
     // parentheses
