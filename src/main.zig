@@ -16,7 +16,7 @@ const execute = execute_pkg.eval;
 pub fn main() !void {
     const source_code =
         \\let fact = fn n ->
-        \\    if (n == 2 * 1 - 3 )
+        \\    if (n +  1== 2 * 1 - 3 )
         \\    then 1
         \\    else n * self_fn (n - 12 * 3 + 8, )
     ;
