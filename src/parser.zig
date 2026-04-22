@@ -102,13 +102,13 @@ pub const Parser = struct {
         _ = l.next();
 
         while (l.tokenType == .ArithOp) {
-            const op_token= l.token;
+            const op_token = l.token;
             _ = l.next();
             const token = l.token;
             const rhs = try alloc.create(Expr);
-            rhs.* = switch(token) {
-                .TokenId => .{ .arith = .{ .var_ = try alloc.dupe(u8, l.name.items) }},
-                .TokenInt => .{ .arith = .{ .constant = l.integer_value.? }},
+            rhs.* = switch (token) {
+                .TokenId => .{ .arith = .{ .var_ = try alloc.dupe(u8, l.name.items) } },
+                .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
                 else => try parseExpr(l, alloc),
             };
             const op: ArithExpr = switch (op_token) {
