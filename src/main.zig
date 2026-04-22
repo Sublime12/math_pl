@@ -1,7 +1,7 @@
 const std = @import("std");
 const parser_pkg = @import("parser.zig");
 const expression_pkg = @import("expression.zig");
-const execute_pkg = @import("execute.zig");
+const eval_pkg = @import("eval.zig");
 
 const Lexer = parser_pkg.Lexer;
 const FnExpr = expression_pkg.FnExpr;
@@ -11,7 +11,7 @@ const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
 
 const eql = std.ascii.eqlIgnoreCase;
-const execute = execute_pkg.eval;
+const eval = eval_pkg.eval;
 
 pub fn main() !void {
     const source_code =
