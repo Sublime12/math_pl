@@ -133,6 +133,45 @@ pub const Parser = struct {
         return .{ .arith = .{ .constant = value } };
     }
 
+    fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
+        l.expect(.TokenOParen);
+        _ = l.next();
+
+        const lhs = try alloc.create(Expr);
+        lhs.* = try parseExpr(l, alloc);
+        l.expect(.TokenCParen);
+        _ = l.next();
+
+        switch (l.tokenType) {
+            .BoolOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: BoolExpr = switch (token) {
+                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
+                    else => panic("panic bool begin with", .{}),
+                };
+                return .{ .bool_ = op };
+            },
+            .ArithOp => {
+                const token = l.token;
+                _ = l.next();
+                const rhs = try alloc.create(Expr);
+                rhs.* = try parseExpr(l, alloc);
+                const op: ArithExpr = switch (token) {
+                    .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                    .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
+                    .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
+                    else => panic("panic bool begin with", .{}),
+                };
+                return .{ .arith = op };
+            },
+            else => {},
+        }
+        return lhs.*;
+    }
+
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .TokenLet => {
@@ -165,6 +204,10 @@ pub const Parser = struct {
                 _ = l.next();
                 return .{ .fn_call = .{ .name = name, .args = args } };
             },
+            // an open paren (not in the context of a function)
+            .TokenOParen => {
+                return parseBeginWithOParen(l, alloc);
+            },
             else => {},
         }
 
@@ -175,12 +218,12 @@ pub const Parser = struct {
     }
 
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
-        l.expect(.TokenOParen);
-        _ = l.next();
+        // l.expect(.TokenOParen);
+        // _ = l.next();
         const eval = try alloc.create(Expr);
         eval.* = try parseExpr(l, alloc);
-        _ = l.expect(.TokenCParen);
-        _ = l.next();
+        // _ = l.expect(.TokenCParen);
+        // _ = l.next();
         _ = l.expect(.TokenThen);
         _ = l.next();
         const then = try alloc.create(Expr);

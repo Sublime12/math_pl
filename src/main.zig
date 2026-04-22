@@ -14,11 +14,17 @@ const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 
 pub fn main() !void {
+    // const source_code =
+    //     \\let fact = fn n ->
+    //     \\    if (n +  1== 2 * 1 - 3 )
+    //     \\    then 1
+    //     \\    else n * self_fn (n - 12 * 3 + 8, )
+    // ;
+
     const source_code =
-        \\let fact = fn n ->
-        \\    if (n +  1== 2 * 1 - 3 )
+        \\    if (3 + 7) == 2 * 1 - 3
         \\    then 1
-        \\    else n * self_fn (n - 12 * 3 + 8, )
+        \\    else (6 * 3) + 1 - 5
     ;
 
     // const source_code = "24 ==  1 * 2 * 3 * 4";
@@ -44,11 +50,11 @@ pub fn main() !void {
     expr.print();
     std.debug.print("\n", .{});
 
-    // const new_expr = execute(expr);
+    const new_expr = eval(expr);
     //
-    // std.debug.print("new expr: ", .{});
-    // new_expr.print();
-    // std.debug.print("\n", .{});
+    std.debug.print("new expr: ", .{});
+    new_expr.print();
+    std.debug.print("\n", .{});
     // var args = std.ArrayList([]const u8).empty;
     // try args.append(allocator, "a");
     // try args.append(allocator, "b");
@@ -60,7 +66,7 @@ pub fn main() !void {
 
 test "simple fn expression" {
     const allocator = std.testing.allocator;
-    var eval: Expr = .{ .bool_ = .{
+    var eql_expr: Expr = .{ .bool_ = .{
         .eql = .{
             .lhs = &.{ .arith = .{ .var_ = "n" } },
             .rhs = &.{ .arith = .{ .constant = 0 } },
@@ -71,7 +77,7 @@ test "simple fn expression" {
     };
     var else_: Expr = .{ .arith = .{ .var_ = "n" } };
 
-    const if_expr: IfExpr = .{ .eval = &eval, .then = &then, .else_ = &else_ };
+    const if_expr: IfExpr = .{ .eval = &eql_expr, .then = &then, .else_ = &else_ };
 
     var args = std.ArrayList([]const u8).empty;
     defer args.deinit(allocator);

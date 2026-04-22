@@ -126,9 +126,12 @@ pub const BinOp = struct {
     rhs: *Expr,
 
     pub fn print(self: Self, str: []const u8) void {
+        std.debug.print("(", .{});
         self.lhs.print();
         std.debug.print(" {s} ", .{str});
         self.rhs.print();
+
+        std.debug.print(")", .{});
     }
 };
 
@@ -161,6 +164,10 @@ pub const BoolExpr = union(BoolTag) {
     eql: BinCmpExpr,
     gt: BinCmpExpr,
     lt: BinCmpExpr,
+
+    pub fn tag(self: Self) BoolTag {
+        return @as(BoolTag, self);
+    }
 
     pub fn print(self: Self) void {
         switch (self) {
