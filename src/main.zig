@@ -24,7 +24,7 @@ pub fn main() !void {
     const source_code =
         \\    if (3 + 7) == 2 * 1 - 3
         \\    then 1
-        \\    else (6 * 3) + 1 - 5
+        \\    else 6 * 3 + (if 1 == 1 then 3 else (0 - 15))
     ;
 
     // const source_code = "24 ==  1 * 2 * 3 * 4";

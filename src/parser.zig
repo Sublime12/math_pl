@@ -65,7 +65,6 @@ pub const Parser = struct {
         const name_expr = try alloc.create(Expr);
         name_expr.* = .{ .arith = .{ .var_ = name } };
         _ = l.next();
-        std.debug.print("XXXXXXX {}\n", .{l.token});
         switch (l.tokenType) {
             .ArithOp => {
                 const token = l.token;
@@ -98,11 +97,30 @@ pub const Parser = struct {
 
     fn parseBeginWithInt(l: *Lexer, alloc: Allocator) !Expr {
         const value = l.integer_value.?;
-        const name_expr = try alloc.create(Expr);
-        name_expr.* = .{ .arith = .{ .constant = value } };
+        var lhs = try alloc.create(Expr);
+        lhs.* = .{ .arith = .{ .constant = value } };
         _ = l.next();
 
-        std.debug.print("parse int {}\n", .{name_expr});
+        while (l.tokenType == .ArithOp) {
+            const op_token= l.token;
+            _ = l.next();
+            const token = l.token;
+            const rhs = try alloc.create(Expr);
+            rhs.* = switch(token) {
+                .TokenId => .{ .arith = .{ .var_ = try alloc.dupe(u8, l.name.items) }},
+                .TokenInt => .{ .arith = .{ .constant = l.integer_value.? }},
+                else => try parseExpr(l, alloc),
+            };
+            const op: ArithExpr = switch (op_token) {
+                .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
+                .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
+                else => panic("panic bool begin with", .{}),
+            };
+            lhs = try alloc.create(Expr);
+            lhs.* = .{ .arith = op };
+            _ = l.next();
+        }
         switch (l.tokenType) {
             .BoolOp => {
                 const token = l.token;
@@ -110,27 +128,14 @@ pub const Parser = struct {
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: BoolExpr = switch (token) {
-                    .TokenEql => .{ .eql = .{ .lhs = name_expr, .rhs = rhs } },
+                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
                 return .{ .bool_ = op };
             },
-            .ArithOp => {
-                const token = l.token;
-                _ = l.next();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
-                const op: ArithExpr = switch (token) {
-                    .TokenProd => .{ .prod = .{ .lhs = name_expr, .rhs = rhs } },
-                    .TokenMinus => .{ .minus = .{ .lhs = name_expr, .rhs = rhs } },
-                    .TokenPlus => .{ .plus = .{ .lhs = name_expr, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return .{ .arith = op };
-            },
             else => {},
         }
-        return .{ .arith = .{ .constant = value } };
+        return lhs.*;
     }
 
     fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
