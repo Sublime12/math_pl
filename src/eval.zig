@@ -37,9 +37,18 @@ pub fn eval(expr: Expr, local_vars: Vars) Expr {
         .if_ => |if_| {
             return eval_if(if_, local_vars);
         },
+        .var_ => |var_| {
+            return eval_var(var_, local_vars);
+        },
         else => {},
     }
     unreachable;
+}
+
+fn eval_var(expr: []const u8, local_vars: Vars) Expr {
+    const value = local_vars.get(expr) orelse panic("var {s} not in context", .{expr});
+    assert(value.tag() == .bool_);
+    return .{ .bool_ = .{ .constant = value.bool_ } };
 }
 
 fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
@@ -56,7 +65,6 @@ fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
 fn eval_arith(expr: ArithExpr, local_vars: Vars) Expr {
     switch (expr) {
         .constant => |constant| return .{ .arith = .{ .constant = constant } },
-        .var_ => panic("eval for var_ not yet implemented ", .{}),
         .prod, .minus, .plus => |op| {
             const lhs = eval(op.lhs.*, local_vars);
             const rhs = eval(op.rhs.*, local_vars);
@@ -77,12 +85,6 @@ fn eval_arith(expr: ArithExpr, local_vars: Vars) Expr {
 
 fn eval_bool(expr: BoolExpr, local_vars: Vars) Expr {
     switch (expr) {
-        .var_ => |var_| {
-            const value = local_vars.get(var_) orelse panic("var {s} not in context", .{var_});
-
-            assert(value.tag() == .bool_);
-            return .{ .bool_ = .{ .constant = value.bool_ } };
-        },
         .constant => |const_| return .{ .bool_ = .{
             .constant = const_,
         } },

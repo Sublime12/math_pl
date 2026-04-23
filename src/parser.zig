@@ -63,7 +63,7 @@ pub const Parser = struct {
     fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
         const name = try alloc.dupe(u8, l.name.items);
         var lhs = try alloc.create(Expr);
-        lhs.* = .{ .arith = .{ .var_ = name } };
+        lhs.* = .{ .var_ = name };
         _ = l.next();
 
         while (l.tokenType == .ArithOp) {
@@ -72,7 +72,7 @@ pub const Parser = struct {
             const token = l.token;
             const rhs = try alloc.create(Expr);
             rhs.* = switch (token) {
-                .TokenId => .{ .arith = .{ .var_ = try alloc.dupe(u8, l.name.items) } },
+                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.items) },
                 .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
                 else => try parseExpr(l, alloc),
             };
@@ -115,7 +115,7 @@ pub const Parser = struct {
             const token = l.token;
             const rhs = try alloc.create(Expr);
             rhs.* = switch (token) {
-                .TokenId => .{ .arith = .{ .var_ = try alloc.dupe(u8, l.name.items) } },
+                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.items) },
                 .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
                 else => try parseExpr(l, alloc),
             };

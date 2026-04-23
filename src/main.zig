@@ -75,14 +75,14 @@ test "simple fn expression" {
     const allocator = std.testing.allocator;
     var eql_expr: Expr = .{ .bool_ = .{
         .eql = .{
-            .lhs = &.{ .arith = .{ .var_ = "n" } },
+            .lhs = &.{ .var_ = "n" },
             .rhs = &.{ .arith = .{ .constant = 0 } },
         },
     } };
     var then: Expr = .{
         .arith = .{ .constant = 1 },
     };
-    var else_: Expr = .{ .arith = .{ .var_ = "n" } };
+    var else_: Expr = .{ .var_ = "n" };
 
     const if_expr: IfExpr = .{ .eval = &eql_expr, .then = &then, .else_ = &else_ };
 

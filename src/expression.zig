@@ -31,6 +31,7 @@ pub const ExprTag = enum {
     bool_,
     fn_call,
     fn_def,
+    var_,
 };
 
 pub const Expr = union(ExprTag) {
@@ -41,6 +42,7 @@ pub const Expr = union(ExprTag) {
     bool_: BoolExpr,
     fn_call: FnCallExpr,
     fn_def: FnExpr,
+    var_: []const u8,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -49,6 +51,7 @@ pub const Expr = union(ExprTag) {
             .bool_ => |expr| expr.print(),
             .fn_call => |expr| expr.print(),
             .fn_def => |expr| expr.print(),
+            .var_ => |expr| std.debug.print("{s}", .{expr}),
         }
     }
 
@@ -97,7 +100,6 @@ const ArithTag = enum {
     minus,
     plus,
     constant,
-    var_,
 };
 
 pub const ArithExpr = union(ArithTag) {
@@ -107,7 +109,6 @@ pub const ArithExpr = union(ArithTag) {
     minus: BinOp,
     plus: BinOp,
     constant: i32,
-    var_: []const u8,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -115,7 +116,6 @@ pub const ArithExpr = union(ArithTag) {
             .minus => |expr| expr.print("-"),
             .plus => |expr| expr.print("+"),
             .constant => |expr| std.debug.print("{}", .{expr}),
-            .var_ => |expr| std.debug.print("{s}", .{expr}),
         }
     }
 };
@@ -149,7 +149,6 @@ pub const BinCmpExpr = struct {
 };
 
 const BoolTag = enum {
-    var_,
     constant,
     eql,
     gt,
@@ -159,7 +158,6 @@ const BoolTag = enum {
 pub const BoolExpr = union(BoolTag) {
     const Self = @This();
 
-    var_: []const u8,
     constant: bool,
     eql: BinCmpExpr,
     gt: BinCmpExpr,
@@ -171,7 +169,6 @@ pub const BoolExpr = union(BoolTag) {
 
     pub fn print(self: Self) void {
         switch (self) {
-            .var_ => |expr| std.debug.print("{s}", .{expr}),
             .constant => |expr| std.debug.print("{}", .{expr}),
             .eql => |expr| {
                 expr.print("==");
