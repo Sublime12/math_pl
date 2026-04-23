@@ -57,12 +57,12 @@ pub fn main() !void {
     try local_vars.put("a", .{ .int = 5 });
     try local_vars.put("b", .{ .bool_ = true });
     try local_vars.put("c", .{ .int = 5 });
-    
+
     var it = local_vars.iterator();
     while (it.next()) |value| {
-        std.debug.print("key: {s}, value: {}\n", .{value.key_ptr.*, value.value_ptr}); 
+        std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
     }
-    
+
     const new_expr = eval(expr, local_vars);
     //
     std.debug.print("new expr: ", .{});
