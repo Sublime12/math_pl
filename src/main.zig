@@ -28,7 +28,6 @@ pub fn main() !void {
         \\    else 6 * 3 + (if b then 3 else (c - 15))
     ;
 
-    // const source_code = "24 ==  1 * 2 * 3 * 4";
     var buffer: [150]u8 = undefined;
 
     const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
@@ -68,13 +67,6 @@ pub fn main() !void {
     std.debug.print("new expr: ", .{});
     new_expr.print();
     std.debug.print("\n", .{});
-    // var args = std.ArrayList([]const u8).empty;
-    // try args.append(allocator, "a");
-    // try args.append(allocator, "b");
-    // try args.append(allocator, "c");
-    //
-    // const simple_fn_expr = FnExpr.init("simple_fn_expr", args, .{ .bool_ = .{ .constant = 0 } });
-    // _ = simple_fn_expr;
 }
 
 test "simple fn expression" {

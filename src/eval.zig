@@ -57,7 +57,6 @@ fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
     const cond = eval(expr.eval.*, local_vars);
     assert(cond.tag() == .bool_);
     assert(cond.bool_.tag() == .constant);
-    std.debug.print("If eval result: {}\n", .{cond.bool_.constant});
     return if (cond.bool_.constant)
         eval(expr.then.*, local_vars)
     else
@@ -94,7 +93,6 @@ fn eval_bool(expr: BoolExpr, local_vars: Vars) Expr {
             const lhs = eval(eql_expr.lhs.*, local_vars);
             const rhs = eval(eql_expr.rhs.*, local_vars);
 
-            std.debug.print("lhs = {}\n================\n", .{lhs});
             assert(lhs.tag() == .bool_ or lhs.tag() == .arith);
             assert(rhs.tag() == .bool_ or rhs.tag() == .arith);
             assert(lhs.tag() == rhs.tag());

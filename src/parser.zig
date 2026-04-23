@@ -231,12 +231,8 @@ pub const Parser = struct {
     }
 
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
-        // l.expect(.TokenOParen);
-        // _ = l.next();
         const eval = try alloc.create(Expr);
         eval.* = try parseExpr(l, alloc);
-        // _ = l.expect(.TokenCParen);
-        // _ = l.next();
         _ = l.expect(.TokenThen);
         _ = l.next();
         const then = try alloc.create(Expr);
