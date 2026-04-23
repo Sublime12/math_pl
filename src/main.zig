@@ -55,7 +55,7 @@ pub fn main() !void {
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    try local_vars.put("n", .{ .bool_ = true });
+    try local_vars.put("n", .{ .int = 5 });
 
     const new_expr = eval(expr, local_vars);
     //

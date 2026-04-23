@@ -47,8 +47,10 @@ pub fn eval(expr: Expr, local_vars: Vars) Expr {
 
 fn eval_var(expr: []const u8, local_vars: Vars) Expr {
     const value = local_vars.get(expr) orelse panic("var {s} not in context", .{expr});
-    assert(value.tag() == .bool_);
-    return .{ .bool_ = .{ .constant = value.bool_ } };
+    return switch (value) {
+        .bool_ => |var_| .{ .bool_ = .{ .constant = var_ } },
+        .int => |var_| .{ .arith = .{ .constant = var_ } },
+    };
 }
 
 fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
