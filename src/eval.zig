@@ -7,24 +7,10 @@ const ExprTag = expression_pkg.ExprTag;
 const BoolExpr = expression_pkg.BoolExpr;
 const ArithExpr = expression_pkg.ArithExpr;
 const IfExpr = expression_pkg.IfExpr;
+const FnCallExpr = expression_pkg.FnCallExpr;
 
 const assert = std.debug.assert;
 const panic = std.debug.panic;
-
-const VarTag = enum {
-    int,
-    bool_,
-};
-const Var = union(VarTag) {
-    const Self = @This();
-    int: i32,
-    bool_: bool,
-
-    pub fn tag(self: Self) VarTag {
-        return @as(VarTag, self);
-    }
-};
-pub const Vars = std.StringHashMap(Var);
 
 pub fn eval(expr: Expr, local_vars: Vars) Expr {
     switch (expr) {
@@ -40,9 +26,21 @@ pub fn eval(expr: Expr, local_vars: Vars) Expr {
         .var_ => |var_| {
             return eval_var(var_, local_vars);
         },
+        .fn_call => |fn_call| {
+            return eval_fn_call(fn_call, local_vars);
+        },
         else => {},
     }
     unreachable;
+}
+
+fn eval_fn_call(expr: FnCallExpr, local_vars: Vars) Expr {
+    _ = expr;
+    _ = local_vars;
+    panic(
+        "Can not evaluate fn_call for now, we need to pass program context containing function definitions",
+        .{},
+    );
 }
 
 fn eval_var(expr: []const u8, local_vars: Vars) Expr {
@@ -102,3 +100,20 @@ fn eval_bool(expr: BoolExpr, local_vars: Vars) Expr {
         else => unreachable,
     }
 }
+
+const VarTag = enum {
+    int,
+    bool_,
+};
+
+const Var = union(VarTag) {
+    const Self = @This();
+    int: i32,
+    bool_: bool,
+
+    pub fn tag(self: Self) VarTag {
+        return @as(VarTag, self);
+    }
+};
+
+pub const Vars = std.StringHashMap(Var);

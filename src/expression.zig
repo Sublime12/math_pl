@@ -60,7 +60,7 @@ pub const Expr = union(ExprTag) {
     }
 };
 
-const FnCallExpr = struct {
+pub const FnCallExpr = struct {
     const Self = @This();
 
     name: []const u8,
