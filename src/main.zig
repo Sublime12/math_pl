@@ -9,6 +9,7 @@ const BoolExpr = expression_pkg.BoolExpr;
 const Expr = expression_pkg.Expr;
 const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
+const Params = eval_pkg.Params;
 
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
@@ -50,7 +51,10 @@ pub fn main() !void {
     expr.print();
     std.debug.print("\n", .{});
 
-    const new_expr = eval(expr);
+    var params: Params = .init(alloc);
+    defer params.deinit();
+
+    const new_expr = eval(expr, params);
     //
     std.debug.print("new expr: ", .{});
     new_expr.print();

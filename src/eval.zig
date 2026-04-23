@@ -11,42 +11,44 @@ const IfExpr = expression_pkg.IfExpr;
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-pub fn eval(expr: Expr) Expr {
+pub const Vars = std.AutoHashMap([]const u8, i32);
+
+pub fn eval(expr: Expr, local_vars: Vars) Expr {
     // std.debug.print("EXPRP : {}\n", .{expr});
     switch (expr) {
         .bool_ => |bool_| {
-            return eval_bool(bool_);
+            return eval_bool(bool_, local_vars);
         },
         .arith => |arith| {
-            return eval_arith(arith);
+            return eval_arith(arith, local_vars);
         },
         .if_ => |if_| {
-            return eval_if(if_);
+            return eval_if(if_, local_vars);
         },
         else => {},
     }
     unreachable;
 }
 
-fn eval_if(expr: IfExpr) Expr {
-    const cond = eval(expr.eval.*);
+fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
+    const cond = eval(expr.eval.*, local_vars);
     assert(cond.tag() == .bool_);
     assert(cond.bool_.tag() == .constant);
     std.debug.print("If eval result: {}\n", .{cond.bool_.constant});
     return if (cond.bool_.constant)
-        eval(expr.then.*)
+        eval(expr.then.*, local_vars)
     else
-        eval(expr.else_.*);
+        eval(expr.else_.*, local_vars);
 }
 
-fn eval_arith(expr: ArithExpr) Expr {
+
+fn eval_arith(expr: ArithExpr, local_vars: Vars) Expr {
     switch (expr) {
         .constant => |constant| return .{ .arith = .{ .constant = constant } },
         .var_ => panic("eval for var_ not yet implemented ", .{}),
         .prod, .minus, .plus => |op| {
-            const lhs = eval(op.lhs.*);
-            std.debug.print("eval left result: {}\n", .{lhs.arith.constant});
-            const rhs = eval(op.rhs.*);
+            const lhs = eval(op.lhs.*, local_vars);
+            const rhs = eval(op.rhs.*, local_vars);
 
             assert(lhs.tag() == .arith);
             assert(rhs.tag() == .arith);
@@ -62,15 +64,15 @@ fn eval_arith(expr: ArithExpr) Expr {
     }
 }
 
-fn eval_bool(expr: BoolExpr) Expr {
+fn eval_bool(expr: BoolExpr, local_vars: Vars) Expr {
     switch (expr) {
         .var_ => |_| panic("Need to pass variables as args of eval_bool", .{}),
         .constant => |const_| return .{ .bool_ = .{
             .constant = const_,
         } },
         .eql => |eql_expr| {
-            const lhs = eval(eql_expr.lhs.*);
-            const rhs = eval(eql_expr.rhs.*);
+            const lhs = eval(eql_expr.lhs.*, local_vars);
+            const rhs = eval(eql_expr.rhs.*, local_vars);
 
             std.debug.print("lhs = {}\n================\n", .{lhs});
             assert(lhs.tag() == .bool_ or lhs.tag() == .arith);
