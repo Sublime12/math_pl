@@ -9,7 +9,7 @@ const BoolExpr = expression_pkg.BoolExpr;
 const Expr = expression_pkg.Expr;
 const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
-const Params = eval_pkg.Params;
+const Vars = eval_pkg.Vars;
 
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
@@ -23,7 +23,8 @@ pub fn main() !void {
     // ;
 
     const source_code =
-        \\    if (3 + 7) == 2 * 1 - 3
+        // \\    if (3 + 7) == 2 * 1 - 3
+        \\    if n
         \\    then 1
         \\    else 6 * 3 + (if 1 == 1 then 3 else (0 - 15))
     ;
@@ -51,10 +52,12 @@ pub fn main() !void {
     expr.print();
     std.debug.print("\n", .{});
 
-    var params: Params = .init(alloc);
-    defer params.deinit();
+    var local_vars: Vars = .init(alloc);
+    defer local_vars.deinit();
 
-    const new_expr = eval(expr, params);
+    try local_vars.put("n", .{ .bool_ = true });
+
+    const new_expr = eval(expr, local_vars);
     //
     std.debug.print("new expr: ", .{});
     new_expr.print();

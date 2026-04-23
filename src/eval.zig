@@ -11,10 +11,22 @@ const IfExpr = expression_pkg.IfExpr;
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-pub const Vars = std.AutoHashMap([]const u8, i32);
+const VarTag = enum {
+    int,
+    bool_,
+};
+const Var = union(VarTag) {
+    const Self = @This();
+    int: i32,
+    bool_: bool,
+
+    pub fn tag(self: Self) VarTag {
+        return @as(VarTag, self);
+    }
+};
+pub const Vars = std.StringHashMap(Var);
 
 pub fn eval(expr: Expr, local_vars: Vars) Expr {
-    // std.debug.print("EXPRP : {}\n", .{expr});
     switch (expr) {
         .bool_ => |bool_| {
             return eval_bool(bool_, local_vars);
@@ -41,7 +53,6 @@ fn eval_if(expr: IfExpr, local_vars: Vars) Expr {
         eval(expr.else_.*, local_vars);
 }
 
-
 fn eval_arith(expr: ArithExpr, local_vars: Vars) Expr {
     switch (expr) {
         .constant => |constant| return .{ .arith = .{ .constant = constant } },
@@ -66,7 +77,12 @@ fn eval_arith(expr: ArithExpr, local_vars: Vars) Expr {
 
 fn eval_bool(expr: BoolExpr, local_vars: Vars) Expr {
     switch (expr) {
-        .var_ => |_| panic("Need to pass variables as args of eval_bool", .{}),
+        .var_ => |var_| {
+            const value = local_vars.get(var_) orelse panic("var {s} not in context", .{var_});
+
+            assert(value.tag() == .bool_);
+            return .{ .bool_ = .{ .constant = value.bool_ } };
+        },
         .constant => |const_| return .{ .bool_ = .{
             .constant = const_,
         } },
