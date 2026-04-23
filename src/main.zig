@@ -23,10 +23,9 @@ pub fn main() !void {
     // ;
 
     const source_code =
-        // \\    if (3 + 7) == 2 * 1 - 3
-        \\    if n
+        \\    if (3 + a) == 2 * 1 - 3
         \\    then 1
-        \\    else 6 * 3 + (if 1 == 1 then 3 else (0 - 15))
+        \\    else 6 * 3 + (if b then 3 else (c - 15))
     ;
 
     // const source_code = "24 ==  1 * 2 * 3 * 4";
@@ -55,8 +54,15 @@ pub fn main() !void {
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    try local_vars.put("n", .{ .int = 5 });
-
+    try local_vars.put("a", .{ .int = 5 });
+    try local_vars.put("b", .{ .bool_ = true });
+    try local_vars.put("c", .{ .int = 5 });
+    
+    var it = local_vars.iterator();
+    while (it.next()) |value| {
+        std.debug.print("key: {s}, value: {}\n", .{value.key_ptr.*, value.value_ptr}); 
+    }
+    
     const new_expr = eval(expr, local_vars);
     //
     std.debug.print("new expr: ", .{});
