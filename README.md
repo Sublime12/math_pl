@@ -31,7 +31,8 @@ zig build test
 
 ## Example Syntax
 The language handles expressions like:
-For now, the arith expression tree is right associative
+For now, the arith expression tree is left associative, there is no priority
+of operations
 You need to put parenthese to change the correct associativeness
 ```ocaml
 if (3 + 7) == 2 * 1 - 3
