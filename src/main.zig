@@ -23,9 +23,10 @@ pub fn main() !void {
     // ;
 
     const source_code =
-        \\    if (3 + a) == 2 * 1 - 3
+        \\    if n + a - 7
         \\    then 1
-        \\    else 6 * 3 + (if b then 3 else (c - 15))
+        \\    else t + double(6) * 3 + (if b then 3 else (c - 15))
+        \\    let double = fn n -> n * 2
     ;
 
     var lexer = Lexer.init(source_code);
@@ -46,23 +47,23 @@ pub fn main() !void {
     expr.print();
     std.debug.print("\n", .{});
 
-    var local_vars: Vars = .init(alloc);
-    defer local_vars.deinit();
-
-    try local_vars.put("a", .{ .int = 5 });
-    try local_vars.put("b", .{ .bool_ = true });
-    try local_vars.put("c", .{ .int = 5 });
-
-    var it = local_vars.iterator();
-    while (it.next()) |value| {
-        std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
-    }
-
-    const new_expr = eval(expr, local_vars);
+    // var local_vars: Vars = .init(alloc);
+    // defer local_vars.deinit();
     //
-    std.debug.print("new expr: ", .{});
-    new_expr.print();
-    std.debug.print("\n", .{});
+    // try local_vars.put("a", .{ .int = 5 });
+    // try local_vars.put("b", .{ .bool_ = true });
+    // try local_vars.put("c", .{ .int = 5 });
+    //
+    // var it = local_vars.iterator();
+    // while (it.next()) |value| {
+    //     std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
+    // }
+    //
+    // const new_expr = eval(expr, local_vars);
+    // //
+    // std.debug.print("new expr: ", .{});
+    // new_expr.print();
+    // std.debug.print("\n", .{});
 }
 
 test "simple fn expression" {

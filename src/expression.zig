@@ -60,11 +60,13 @@ pub const Expr = union(ExprTag) {
     }
 };
 
+pub const ArgsExpr = std.ArrayList(Expr);
+
 pub const FnCallExpr = struct {
     const Self = @This();
 
     name: []const u8,
-    args: std.ArrayList(Expr),
+    args: ArgsExpr,
 
     pub fn print(self: Self) void {
         std.debug.print("{s} (", .{self.name});
