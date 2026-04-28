@@ -26,7 +26,7 @@ pub const Parser = struct {
 
     pub fn parse(self: *Self) !Expr {
         self.lexer.cursor = .empty;
-        _ = self.lexer.next();
+        self.lexer.nexti();
 
         return parseExpr(self.lexer, self.alloc);
     }
@@ -34,18 +34,18 @@ pub const Parser = struct {
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.TokenId);
         const id = l.name.toStr(l.content);
-        _ = l.next();
+        l.nexti();
         l.expect(.TokenAssign);
-        _ = l.next();
+        l.nexti();
         l.expect(.TokenFn);
-        _ = l.next();
+        l.nexti();
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .TokenId) {
             try args.append(alloc, l.name.toStr(l.content));
-            _ = l.next();
+            l.nexti();
         }
         l.expect(.TokenArrow);
-        _ = l.next();
+        l.nexti();
 
         const body = try alloc.create(Expr);
         body.* = try parseExpr(l, alloc);
@@ -64,7 +64,7 @@ pub const Parser = struct {
     fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.toStr(l.content);
         var next_l = l.*;
-        _ = next_l.next();
+        next_l.nexti();
         //  if l.token == arithop, primary or open
         //  while them
         //  switch:
@@ -77,23 +77,23 @@ pub const Parser = struct {
         lhs.* = switch (next_l.token) {
             .TokenOParen => try parseFn(l, alloc, name),
             else => blk: {
-                _ = l.next();
+                l.nexti();
                 break :blk .{ .var_ = name };
             },
         };
 
         while (l.tokenType == .ArithOp) {
             const op_token = l.token;
-            _ = l.next();
+            l.nexti();
 
             const rhs = try alloc.create(Expr);
             next_l = l.*;
-            _ = next_l.next();
+            next_l.nexti();
 
             const current_name = l.name.toStr(l.content);
             rhs.* = switch (l.token) {
                 .TokenId => if (next_l.token == .TokenOParen) blk: {
-                    _ = l.next();
+                    l.nexti();
                     const expr = try parseFn(l, alloc, current_name);
                     break :blk expr;
                 } else .{ .var_ = current_name },
@@ -110,7 +110,7 @@ pub const Parser = struct {
 
             lhs = try alloc.create(Expr);
             lhs.* = .{ .arith = op };
-            _ = l.next();
+            l.nexti();
             std.debug.print("NEXT TOKEN: {}\n", .{l.token});
         }
 
@@ -120,15 +120,15 @@ pub const Parser = struct {
     fn parseFn(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
         var args = ArgsExpr.empty;
         l.expect(.TokenOParen);
-        _ = l.next();
+        l.nexti();
         while (true) {
             const expr = try parseExpr(l, alloc);
             try args.append(alloc, expr);
             if (l.token != .TokenComma) break;
-            _ = l.next();
+            l.nexti();
         }
         l.expect(.TokenCParen);
-        _ = l.next();
+        l.nexti();
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
         return lhs;
     }
@@ -139,7 +139,7 @@ pub const Parser = struct {
             const arg = try parseExpr(l, alloc);
             try args.append(alloc, arg);
             l.expect(.TokenComma);
-            _ = l.next();
+            l.nexti();
         }
         return args;
     }
@@ -148,11 +148,11 @@ pub const Parser = struct {
         const value = l.integer_value.?;
         var lhs = try alloc.create(Expr);
         lhs.* = .{ .arith = .{ .constant = value } };
-        _ = l.next();
+        l.nexti();
 
         while (l.tokenType == .ArithOp) {
             const op_token = l.token;
-            _ = l.next();
+            l.nexti();
             const token = l.token;
             const rhs = try alloc.create(Expr);
             rhs.* = switch (token) {
@@ -168,12 +168,12 @@ pub const Parser = struct {
             };
             lhs = try alloc.create(Expr);
             lhs.* = .{ .arith = op };
-            _ = l.next();
+            l.nexti();
         }
         switch (l.tokenType) {
             .BoolOp => {
                 const token = l.token;
-                _ = l.next();
+                l.nexti();
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: BoolExpr = switch (token) {
@@ -189,17 +189,17 @@ pub const Parser = struct {
 
     fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.TokenOParen);
-        _ = l.next();
+        l.nexti();
 
         const lhs = try alloc.create(Expr);
         lhs.* = try parseExpr(l, alloc);
         l.expect(.TokenCParen);
-        _ = l.next();
+        l.nexti();
 
         switch (l.tokenType) {
             .BoolOp => {
                 const token = l.token;
-                _ = l.next();
+                l.nexti();
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: BoolExpr = switch (token) {
@@ -210,7 +210,7 @@ pub const Parser = struct {
             },
             .ArithOp => {
                 const token = l.token;
-                _ = l.next();
+                l.nexti();
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: ArithExpr = switch (token) {
@@ -233,11 +233,11 @@ pub const Parser = struct {
         );
         switch (l.token) {
             .TokenLet => {
-                _ = l.next();
+                l.nexti();
                 return parseFnDef(l, alloc);
             },
             .TokenIf => {
-                _ = l.next();
+                l.nexti();
                 return parseIf(l, alloc);
             },
             .TokenId => {
@@ -249,12 +249,12 @@ pub const Parser = struct {
             },
             .TokenSelfFn => {
                 const name = l.name.toStr(l.content);
-                _ = l.next();
+                l.nexti();
                 l.expect(.TokenOParen);
-                _ = l.next();
+                l.nexti();
                 const args = try parseArgs(l, alloc);
                 l.expect(.TokenCParen);
-                _ = l.next();
+                l.nexti();
                 return .{ .fn_call = .{ .name = name, .args = args } };
             },
             // an open paren (not in the context of a function)
@@ -273,12 +273,12 @@ pub const Parser = struct {
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
         const eval = try alloc.create(Expr);
         eval.* = try parseExpr(l, alloc);
-        _ = l.expect(.TokenThen);
-        _ = l.next();
+        l.expect(.TokenThen);
+        l.nexti();
         const then = try alloc.create(Expr);
         then.* = try parseExpr(l, alloc);
         l.expect(.TokenElse);
-        _ = l.next();
+        l.nexti();
         const else_ = try alloc.create(Expr);
         else_.* = try parseExpr(l, alloc);
 
@@ -296,7 +296,7 @@ pub const Parser = struct {
             const lhs = try alloc.create(Expr);
             lhs.* = try parseExpr(l, alloc);
             l.expect(.TokenEql);
-            _ = l.next();
+            l.nexti();
             const rhs = try alloc.create(Expr);
             rhs.* = try parseExpr(l, alloc);
             return .{
@@ -403,6 +403,11 @@ pub const Lexer = struct {
             },
             else => |t| panic("setToken not implemented for {}", .{t}),
         }
+    }
+
+    /// like next but ignore the output
+    pub fn nexti(l: *Lexer) void {
+        _ = l.next();
     }
 
     pub fn next(l: *Lexer) bool {
