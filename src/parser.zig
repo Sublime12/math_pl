@@ -228,7 +228,7 @@ pub const Parser = struct {
 
         panic(
             "Panic with token {}, value: {s}",
-            .{ l.token, l.name.toStr(l.content)},
+            .{ l.token, l.name.toStr(l.content) },
         );
     }
 
@@ -271,7 +271,7 @@ pub const Parser = struct {
 };
 
 // A slice indexing where is the id
-// in the content 
+// in the content
 const SliceId = struct {
     const Self = @This();
     pub const empty: Self = .{ .first = 0, .end = 0 };
@@ -287,7 +287,9 @@ const SliceId = struct {
         self.end = pos;
     }
 
-    pub fn isEmpty(self: Self) bool { return self.first == self.end; }
+    pub fn isEmpty(self: Self) bool {
+        return self.first == self.end;
+    }
 
     pub fn extend(self: *Self) void {
         self.end += 1;
