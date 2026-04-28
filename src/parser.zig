@@ -32,7 +32,8 @@ pub const Parser = struct {
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.TokenId);
-        const id = try alloc.dupe(u8, l.name.items);
+        // const id = try alloc.dupe(u8, l.name.items);
+        const id = l.name.toStr(l.content);
         _ = l.next();
         l.expect(.TokenAssign);
         _ = l.next();
@@ -40,7 +41,8 @@ pub const Parser = struct {
         _ = l.next();
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .TokenId) {
-            try args.append(alloc, try alloc.dupe(u8, l.name.items));
+            // try args.append(alloc, try alloc.dupe(u8, l.name.items));
+            try args.append(alloc, try alloc.dupe(u8, l.name.toStr(l.content)));
             _ = l.next();
         }
         l.expect(.TokenArrow);
@@ -61,7 +63,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
-        const name = try alloc.dupe(u8, l.name.items);
+        const name = try alloc.dupe(u8, l.name.toStr(l.content));
         var lhs = try alloc.create(Expr);
         lhs.* = .{ .var_ = name };
         _ = l.next();
@@ -72,7 +74,7 @@ pub const Parser = struct {
             const token = l.token;
             const rhs = try alloc.create(Expr);
             rhs.* = switch (token) {
-                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.items) },
+                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.toStr(l.content)) },
                 .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
                 else => try parseExpr(l, alloc),
             };
@@ -115,7 +117,7 @@ pub const Parser = struct {
             const token = l.token;
             const rhs = try alloc.create(Expr);
             rhs.* = switch (token) {
-                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.items) },
+                .TokenId => .{ .var_ = try alloc.dupe(u8, l.name.toStr(l.content)) },
                 .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
                 else => try parseExpr(l, alloc),
             };
@@ -202,7 +204,7 @@ pub const Parser = struct {
                 return parseBeginWithInt(l, alloc);
             },
             .TokenFn, .TokenSelfFn => {
-                const name = try alloc.dupe(u8, l.name.items);
+                const name = try alloc.dupe(u8, l.name.toStr(l.content));
                 _ = l.next();
                 l.expect(.TokenOParen);
                 _ = l.next();
@@ -226,7 +228,7 @@ pub const Parser = struct {
 
         panic(
             "Panic with token {}, value: {s}",
-            .{ l.token, l.name.items },
+            .{ l.token, l.name.toStr(l.content)},
         );
     }
 
@@ -268,20 +270,44 @@ pub const Parser = struct {
     }
 };
 
+// A slice indexing where is the id
+// in the content 
+const SliceId = struct {
+    const Self = @This();
+    pub const empty: Self = .{ .first = 0, .end = 0 };
+    first: usize,
+    end: usize,
+
+    pub fn toStr(self: Self, content: []const u8) []const u8 {
+        return content[self.first..self.end];
+    }
+
+    pub fn clear(self: *Self, pos: usize) void {
+        self.first = pos;
+        self.end = pos;
+    }
+
+    pub fn isEmpty(self: Self) bool { return self.first == self.end; }
+
+    pub fn extend(self: *Self) void {
+        self.end += 1;
+    }
+};
+
 pub const Lexer = struct {
     content: []const u8,
     token: TokenKind,
     tokenType: TokenType,
     integer_value: ?i32,
     cursor: Cursor,
-    name: std.ArrayList(u8),
+    name: SliceId,
 
-    pub fn init(content: []const u8, emptyTokenStr: std.ArrayList(u8)) Lexer {
+    pub fn init(content: []const u8) Lexer {
         return .{
             .content = content,
             .token = .TokenNone,
             .cursor = .empty,
-            .name = emptyTokenStr,
+            .name = .empty,
             .integer_value = null,
             .tokenType = .None,
         };
@@ -294,15 +320,19 @@ pub const Lexer = struct {
                 l.token,
                 l.cursor.row,
                 l.cursor.col,
-                l.name.items,
+                l.name.toStr(l.content),
                 l.integer_value,
             });
         }
     }
 
     fn clearAppendSymbol(l: *Lexer, x: u8) void {
-        l.name.clearRetainingCapacity();
-        l.name.appendAssumeCapacity(x);
+        _ = x;
+        // l.name.clearRetainingCapacity();
+        // cursor.pos always return the position after the last
+        // character that was processed
+        l.name.clear(l.cursor.pos - 1);
+        l.name.extend();
     }
 
     fn setToken(l: *Lexer, token: TokenKind) void {
@@ -351,7 +381,7 @@ pub const Lexer = struct {
                 const n_char = l.current_char();
                 if (n_char == '=') {
                     _ = l.next_char();
-                    l.name.appendAssumeCapacity(n_char.?);
+                    l.name.extend();
                     l.setToken(.TokenEql);
                     return true;
                 }
@@ -363,7 +393,7 @@ pub const Lexer = struct {
                 const n_char = l.current_char();
                 if (n_char == '>') {
                     _ = l.next_char();
-                    l.name.appendAssumeCapacity(n_char.?);
+                    l.name.extend();
                     l.setToken(.TokenArrow);
                     return true;
                 }
@@ -402,31 +432,31 @@ pub const Lexer = struct {
             l.clearAppendSymbol(x);
             while (l.current_char()) |c| {
                 if (!isSymbol(c)) break;
-                l.name.appendAssumeCapacity(c);
+                l.name.extend();
                 _ = l.next_char();
             }
 
-            if (eql("let", l.name.items)) {
+            if (eql("let", l.name.toStr(l.content))) {
                 l.setToken(.TokenLet);
                 return true;
-            } else if (eql("if", l.name.items)) {
+            } else if (eql("if", l.name.toStr(l.content))) {
                 l.setToken(.TokenIf);
                 return true;
-            } else if (eql("self_fn", l.name.items)) {
+            } else if (eql("self_fn", l.name.toStr(l.content))) {
                 l.setToken(.TokenSelfFn);
                 return true;
-            } else if (eql("fn", l.name.items)) {
+            } else if (eql("fn", l.name.toStr(l.content))) {
                 l.setToken(.TokenFn);
                 return true;
-            } else if (eql("then", l.name.items)) {
+            } else if (eql("then", l.name.toStr(l.content))) {
                 l.setToken(.TokenThen);
                 return true;
-            } else if (eql("else", l.name.items)) {
+            } else if (eql("else", l.name.toStr(l.content))) {
                 l.setToken(.TokenElse);
                 return true;
-            } else if (std.ascii.isDigit(l.name.items[0])) {
-                const number = std.fmt.parseInt(i32, l.name.items, 10) catch {
-                    std.debug.panic("Expected number, found: {s}", .{l.name.items});
+            } else if (std.ascii.isDigit(l.name.toStr(l.content)[0])) {
+                const number = std.fmt.parseInt(i32, l.name.toStr(l.content), 10) catch {
+                    std.debug.panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
                 };
                 l.integer_value = number;
                 l.setToken(.TokenInt);

@@ -28,16 +28,12 @@ pub fn main() !void {
         \\    else 6 * 3 + (if b then 3 else (c - 15))
     ;
 
-    var buffer: [150]u8 = undefined;
-
-    const tokenStr = std.ArrayList(u8).initBuffer(&buffer);
-
-    var lexer = Lexer.init(source_code, tokenStr);
+    var lexer = Lexer.init(source_code);
 
     while (lexer.next()) {
         std.debug.print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
             lexer.token,
-            if (lexer.token != .TokenEnd) lexer.name.items else "$$",
+            if (lexer.token != .TokenEnd) lexer.name.toStr(lexer.content) else "$$",
             lexer.tokenType,
         });
         if (lexer.token == .TokenEnd) break;
