@@ -23,9 +23,9 @@ pub fn main() !void {
     // ;
 
     const source_code =
-        \\    if n + a - 7
+        \\    if n + a - 7 + 1 + 2
         \\    then 1
-        \\    else t + double(6) * 3 + (if b then 3 else (c - 15))
+        \\    else t + double(6, if i then 0 else 9) * 3 + (if b then 3 else (c - 15))
         \\    let double = fn n -> n * 2
     ;
 

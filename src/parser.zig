@@ -75,7 +75,11 @@ pub const Parser = struct {
 
         var lhs = try alloc.create(Expr);
         lhs.* = switch (next_l.token) {
-            .TokenOParen => try parseFn(l, alloc, name),
+            .TokenOParen => blk: {
+                const expr = try parseFn(l, alloc, name);
+                l.nexti();
+                break :blk expr;
+            },
             else => blk: {
                 l.nexti();
                 break :blk .{ .var_ = name };
@@ -128,7 +132,6 @@ pub const Parser = struct {
             l.nexti();
         }
         l.expect(.TokenCParen);
-        l.nexti();
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
         return lhs;
     }
@@ -241,7 +244,6 @@ pub const Parser = struct {
                 return parseIf(l, alloc);
             },
             .TokenId => {
-                // std.debug.print("n was here? {}, {s}\n", .{l.token, l.name.toStr(l.content)});
                 return parseBeginWithId(l, alloc);
             },
             .TokenInt => {
