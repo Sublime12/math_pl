@@ -69,7 +69,7 @@ pub const Parser = struct {
             lhs.* = switch (next_l.token) {
                 .TokenOParen => blk: {
                     l.nexti();
-                    const expr = try parseFn(l, alloc, name);
+                    const expr = try parseFnCall(l, alloc, name);
                     l.expect(.TokenCParen);
                     l.nexti();
                     break :blk expr;
@@ -96,7 +96,7 @@ pub const Parser = struct {
             rhs.* = switch (l.token) {
                 .TokenId => if (next_l.token == .TokenOParen) blk: {
                     l.nexti();
-                    const expr = try parseFn(l, alloc, current_name);
+                    const expr = try parseFnCall(l, alloc, current_name);
                     break :blk expr;
                 } else .{ .var_ = current_name },
                 .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
@@ -119,7 +119,7 @@ pub const Parser = struct {
         return lhs.*;
     }
 
-    fn parseFn(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
+    fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
         var args = ArgsExpr.empty;
         l.expect(.TokenOParen);
         l.nexti();
@@ -364,7 +364,7 @@ pub const Lexer = struct {
         _ = l.next();
     }
 
-    /// Return a new lexer with the token set 
+    /// Return a new lexer with the token set
     /// to the element in source code
     pub fn nextl(l: Lexer) Lexer {
         var new_l = l;
