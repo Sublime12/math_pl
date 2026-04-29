@@ -63,16 +63,7 @@ pub const Parser = struct {
     /// or a function call a(b, c, d)
     fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.toStr(l.content);
-        var next_l = l.*;
-        next_l.nexti();
-        //  if l.token == arithop, primary or open
-        //  while them
-        //  switch:
-        //       TokenId -> if (is_fn_call()) parseFnCall else parseId()
-        //       TokenInt -> parseInt()
-        //       else -> parseExpr()
-        //  1 + 2 - 3 * 4 == 5
-
+        var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
         lhs.* = switch (next_l.token) {
             .TokenOParen => blk: {
@@ -410,6 +401,14 @@ pub const Lexer = struct {
     /// like next but ignore the output
     pub fn nexti(l: *Lexer) void {
         _ = l.next();
+    }
+
+    /// Return a new lexer with the token set 
+    /// to the element in source code
+    pub fn nextl(l: Lexer) Lexer {
+        var new_l = l;
+        new_l.nexti();
+        return new_l;
     }
 
     pub fn next(l: *Lexer) bool {
