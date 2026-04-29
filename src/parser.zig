@@ -113,7 +113,6 @@ pub const Parser = struct {
             lhs = try alloc.create(Expr);
             lhs.* = .{ .arith = op };
             l.nexti();
-            std.debug.print("NEXT TOKEN: {}\n", .{l.token});
         }
 
         return lhs.*;
@@ -185,10 +184,6 @@ pub const Parser = struct {
     }
 
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
-        std.debug.print(
-            "Parsing {} {s} {?}\n",
-            .{ l.token, l.name.toStr(l.content), l.integer_value },
-        );
         switch (l.token) {
             .TokenLet => {
                 l.nexti();
@@ -463,7 +458,7 @@ pub const Lexer = struct {
                 return true;
             } else if (std.ascii.isDigit(l.name.toStr(l.content)[0])) {
                 const number = std.fmt.parseInt(i32, l.name.toStr(l.content), 10) catch {
-                    std.debug.panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
+                    panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
                 };
                 l.integer_value = number;
                 l.setToken(.TokenInt);
