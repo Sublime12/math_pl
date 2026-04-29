@@ -67,7 +67,9 @@ pub const Parser = struct {
         var lhs = try alloc.create(Expr);
         lhs.* = switch (next_l.token) {
             .TokenOParen => blk: {
+                l.nexti();
                 const expr = try parseFn(l, alloc, name);
+                l.expect(.TokenCParen);
                 l.nexti();
                 break :blk expr;
             },
