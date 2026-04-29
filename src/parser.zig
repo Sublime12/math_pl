@@ -61,23 +61,28 @@ pub const Parser = struct {
     /// can be an arith expr a + 1 - 3
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
-    fn parseBeginWithId(l: *Lexer, alloc: Allocator) !Expr {
+    fn parseBeginWithIdOrInt(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.toStr(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
-        lhs.* = switch (next_l.token) {
-            .TokenOParen => blk: {
-                l.nexti();
-                const expr = try parseFn(l, alloc, name);
-                l.expect(.TokenCParen);
-                l.nexti();
-                break :blk expr;
-            },
-            else => blk: {
-                l.nexti();
-                break :blk .{ .var_ = name };
-            },
-        };
+        if (l.token == .TokenId) {
+            lhs.* = switch (next_l.token) {
+                .TokenOParen => blk: {
+                    l.nexti();
+                    const expr = try parseFn(l, alloc, name);
+                    l.expect(.TokenCParen);
+                    l.nexti();
+                    break :blk expr;
+                },
+                else => blk: {
+                    l.nexti();
+                    break :blk .{ .var_ = name };
+                },
+            };
+        } else if (l.token == .TokenInt) {
+            lhs.* = .{ .arith = .{ .constant = l.integer_value.? } };
+            l.nexti();
+        }
 
         while (l.tokenType == .ArithOp) {
             const op_token = l.token;
@@ -140,49 +145,6 @@ pub const Parser = struct {
         return args;
     }
 
-    fn parseBeginWithInt(l: *Lexer, alloc: Allocator) !Expr {
-        const value = l.integer_value.?;
-        var lhs = try alloc.create(Expr);
-        lhs.* = .{ .arith = .{ .constant = value } };
-        l.nexti();
-
-        while (l.tokenType == .ArithOp) {
-            const op_token = l.token;
-            l.nexti();
-            const token = l.token;
-            const rhs = try alloc.create(Expr);
-            rhs.* = switch (token) {
-                .TokenId => .{ .var_ = l.name.toStr(l.content) },
-                .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
-                else => try parseExpr(l, alloc),
-            };
-            const op: ArithExpr = switch (op_token) {
-                .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
-                .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
-                else => panic("panic bool begin with", .{}),
-            };
-            lhs = try alloc.create(Expr);
-            lhs.* = .{ .arith = op };
-            l.nexti();
-        }
-        switch (l.tokenType) {
-            .BoolOp => {
-                const token = l.token;
-                l.nexti();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
-                const op: BoolExpr = switch (token) {
-                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return .{ .bool_ = op };
-            },
-            else => {},
-        }
-        return lhs.*;
-    }
-
     fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.TokenOParen);
         l.nexti();
@@ -236,11 +198,8 @@ pub const Parser = struct {
                 l.nexti();
                 return parseIf(l, alloc);
             },
-            .TokenId => {
-                return parseBeginWithId(l, alloc);
-            },
-            .TokenInt => {
-                return parseBeginWithInt(l, alloc);
+            .TokenId, .TokenInt => {
+                return parseBeginWithIdOrInt(l, alloc);
             },
             .TokenSelfFn => {
                 const name = l.name.toStr(l.content);
