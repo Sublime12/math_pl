@@ -122,7 +122,7 @@ pub const Parser = struct {
                     break :blk expr;
                 },
             };
-            
+
             if (op_token_type == .ArithOp) {
                 const op: ArithExpr = switch (op_token) {
                     .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
@@ -135,7 +135,7 @@ pub const Parser = struct {
                 lhs.* = .{ .arith = op };
             } else if (op_token_type == .BoolOp) {
                 const op: BoolExpr = switch (op_token) {
-                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs }} ,
+                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("not catch for {}", .{op_token}),
                 };
 
