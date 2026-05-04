@@ -13,6 +13,7 @@ const Vars = eval_pkg.Vars;
 
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
+const buildContext = eval_pkg.buildContext;
 
 pub fn main() !void {
     // const source_code =
@@ -50,19 +51,21 @@ pub fn main() !void {
     expr.print();
     std.debug.print("\n", .{});
 
-    // var local_vars: Vars = .init(alloc);
-    // defer local_vars.deinit();
-    //
-    // try local_vars.put("a", .{ .int = 5 });
-    // try local_vars.put("b", .{ .bool_ = true });
-    // try local_vars.put("c", .{ .int = 5 });
-    //
+    var local_vars: Vars = .init(alloc);
+    defer local_vars.deinit();
+
+    try local_vars.put("a", .{ .int = 5 });
+    try local_vars.put("b", .{ .bool_ = true });
+    try local_vars.put("c", .{ .int = 5 });
+
     // var it = local_vars.iterator();
     // while (it.next()) |value| {
     //     std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
     // }
-    //
-    // const new_expr = eval(expr, local_vars);
+    const ctx = try buildContext(expr, alloc);
+    const new_expr = eval(expr, ctx, local_vars);
+    std.debug.print("new expr: \n", .{});
+    new_expr.print();
     // //
     // std.debug.print("new expr: ", .{});
     // new_expr.print();
