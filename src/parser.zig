@@ -119,7 +119,6 @@ pub const Parser = struct {
                 },
                 else => blk: {
                     const expr = try parseExpr(l, alloc);
-                    std.debug.print("My token was : {} {s} {?}\n", .{l.token, l.name.toStr(l.content), l.integer_value });
                     break :blk expr;
                 },
             };
@@ -133,8 +132,6 @@ pub const Parser = struct {
 
             lhs = try alloc.create(Expr);
             lhs.* = .{ .arith = op };
-            // l.nexti();
-            // std.debug.print("begin ID INT: {} {s} {}\n", .{l.token, l.name.toStr(l.content), l.integer_value.?});
         }
 
         return lhs.*;
@@ -173,9 +170,6 @@ pub const Parser = struct {
 
         const lhs = try alloc.create(Expr);
         lhs.* = try parseExpr(l, alloc);
-        // l.expect(.TokenCParen);
-        // l.nexti();
-        // return lhs.*;
         const next_l = l.nextl();
 
         switch (next_l.tokenType) {

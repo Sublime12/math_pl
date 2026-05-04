@@ -26,7 +26,6 @@ pub fn main() !void {
         \\    if 1 + a - 7 + 1 + 2
         \\    then 1
         \\    else 143 + double(6, if i then 0 else 9) * 3 + (if b then 3 else c) ;
-        // \\    if  a then 15 else 1 + (2 + 3);
         \\    let double = fn n -> n * 2 ;
     ;
 
