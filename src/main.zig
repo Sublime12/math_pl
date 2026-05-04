@@ -27,6 +27,7 @@ pub fn main() !void {
         \\    then 1
         \\    else 143 + double(6, if i then 0 else 9) * 3 + (if b then 3 else c) ;
         \\    let double = fn n -> n * 2 ;
+        \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
     ;
 
     var lexer = Lexer.init(source_code);

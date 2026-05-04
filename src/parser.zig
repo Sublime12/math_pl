@@ -27,11 +27,10 @@ pub const Parser = struct {
     pub fn parse(self: *Self) !Expr {
         self.lexer.cursor = .empty;
         self.lexer.nexti();
-        
+
         var program: std.ArrayList(Expr) = .empty;
         var i: i32 = 0;
         while (self.lexer.token != .TokenEnd) {
-
             std.debug.print("IIIII = {}\n", .{i});
             const expr = try parseExpr(self.lexer, self.alloc);
             self.lexer.expect(.TokenSemicolon);
@@ -95,8 +94,9 @@ pub const Parser = struct {
             l.nexti();
         }
 
-        while (l.tokenType == .ArithOp) {
+        while (l.tokenType == .ArithOp or l.tokenType == .BoolOp) {
             const op_token = l.token;
+            const op_token_type = l.tokenType;
             l.nexti();
 
             const rhs = try alloc.create(Expr);
@@ -122,16 +122,26 @@ pub const Parser = struct {
                     break :blk expr;
                 },
             };
+            
+            if (op_token_type == .ArithOp) {
+                const op: ArithExpr = switch (op_token) {
+                    .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                    .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
+                    .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
+                    else => unreachable,
+                };
 
-            const op: ArithExpr = switch (op_token) {
-                .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
-                .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
-                else => unreachable,
-            };
+                lhs = try alloc.create(Expr);
+                lhs.* = .{ .arith = op };
+            } else if (op_token_type == .BoolOp) {
+                const op: BoolExpr = switch (op_token) {
+                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs }} ,
+                    else => panic("not catch for {}", .{op_token}),
+                };
 
-            lhs = try alloc.create(Expr);
-            lhs.* = .{ .arith = op };
+                lhs = try alloc.create(Expr);
+                lhs.* = .{ .bool_ = op };
+            }
         }
 
         return lhs.*;
