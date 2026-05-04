@@ -68,7 +68,7 @@ pub fn main() !void {
 
     while (it.next()) |fn_expr| {
         const name = fn_expr.key_ptr.*;
-        std.debug.print("fn {s}\n", .{name}); 
+        std.debug.print("fn {s}\n", .{name});
     }
 
     // const new_expr = eval(expr, ctx, local_vars);
