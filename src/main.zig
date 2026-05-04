@@ -22,6 +22,8 @@ pub fn main() !void {
     //     \\    else n * self_fn (n - 12 * 3 + 8, )
     // ;
 
+    // The main program is going to be all expressions that are
+    // not function declaration in the global scope
     const source_code =
         \\    if 1 + a - 7 + 1 + 2
         \\    then 1
