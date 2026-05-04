@@ -63,9 +63,17 @@ pub fn main() !void {
     //     std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
     // }
     const ctx = try buildContext(expr, alloc);
-    const new_expr = eval(expr, ctx, local_vars);
-    std.debug.print("new expr: \n", .{});
-    new_expr.print();
+
+    var it = ctx.funs.iterator();
+
+    while (it.next()) |fn_expr| {
+        const name = fn_expr.key_ptr.*;
+        std.debug.print("fn {s}\n", .{name}); 
+    }
+
+    // const new_expr = eval(expr, ctx, local_vars);
+    // std.debug.print("new expr: \n", .{});
+    // new_expr.print();
     // //
     // std.debug.print("new expr: ", .{});
     // new_expr.print();
