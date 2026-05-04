@@ -32,6 +32,7 @@ pub const ExprTag = enum {
     fn_call,
     fn_def,
     var_,
+    list,
 };
 
 pub const Expr = union(ExprTag) {
@@ -43,6 +44,7 @@ pub const Expr = union(ExprTag) {
     fn_call: FnCallExpr,
     fn_def: FnExpr,
     var_: []const u8,
+    list: std.ArrayList(Expr),
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -52,6 +54,12 @@ pub const Expr = union(ExprTag) {
             .fn_call => |expr| expr.print(),
             .fn_def => |expr| expr.print(),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
+            .list => |expr| {
+                for (expr.items) |el| {
+                    el.print();
+                    std.debug.print("; \n", .{});
+                }
+            },
         }
     }
 

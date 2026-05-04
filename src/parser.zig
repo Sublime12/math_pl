@@ -27,8 +27,19 @@ pub const Parser = struct {
     pub fn parse(self: *Self) !Expr {
         self.lexer.cursor = .empty;
         self.lexer.nexti();
+        
+        var program: std.ArrayList(Expr) = .empty;
+        var i: i32 = 0;
+        while (self.lexer.token != .TokenEnd) {
 
-        return parseExpr(self.lexer, self.alloc);
+            std.debug.print("IIIII = {}\n", .{i});
+            const expr = try parseExpr(self.lexer, self.alloc);
+            self.lexer.expect(.TokenSemicolon);
+            self.lexer.nexti();
+            try program.append(self.alloc, expr);
+            i += 1;
+        }
+        return .{ .list = program };
     }
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
@@ -98,9 +109,19 @@ pub const Parser = struct {
                     l.nexti();
                     const expr = try parseFnCall(l, alloc, current_name);
                     break :blk expr;
-                } else .{ .var_ = current_name },
-                .TokenInt => .{ .arith = .{ .constant = l.integer_value.? } },
-                else => try parseExpr(l, alloc),
+                } else blk: {
+                    l.nexti();
+                    break :blk .{ .var_ = current_name };
+                },
+                .TokenInt => blk: {
+                    l.nexti();
+                    break :blk .{ .arith = .{ .constant = l.integer_value.? } };
+                },
+                else => blk: {
+                    const expr = try parseExpr(l, alloc);
+                    std.debug.print("My token was : {} {s} {?}\n", .{l.token, l.name.toStr(l.content), l.integer_value });
+                    break :blk expr;
+                },
             };
 
             const op: ArithExpr = switch (op_token) {
@@ -112,7 +133,8 @@ pub const Parser = struct {
 
             lhs = try alloc.create(Expr);
             lhs.* = .{ .arith = op };
-            l.nexti();
+            // l.nexti();
+            // std.debug.print("begin ID INT: {} {s} {}\n", .{l.token, l.name.toStr(l.content), l.integer_value.?});
         }
 
         return lhs.*;
@@ -129,6 +151,7 @@ pub const Parser = struct {
             l.nexti();
         }
         l.expect(.TokenCParen);
+        l.nexti();
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
         return lhs;
     }
@@ -150,11 +173,14 @@ pub const Parser = struct {
 
         const lhs = try alloc.create(Expr);
         lhs.* = try parseExpr(l, alloc);
-        l.expect(.TokenCParen);
-        l.nexti();
+        // l.expect(.TokenCParen);
+        // l.nexti();
+        // return lhs.*;
+        const next_l = l.nextl();
 
-        switch (l.tokenType) {
+        switch (next_l.tokenType) {
             .BoolOp => {
+                l.nexti();
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
@@ -166,6 +192,7 @@ pub const Parser = struct {
                 return .{ .bool_ = op };
             },
             .ArithOp => {
+                l.nexti();
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
@@ -180,6 +207,7 @@ pub const Parser = struct {
             },
             else => {},
         }
+
         return lhs.*;
     }
 
@@ -208,7 +236,10 @@ pub const Parser = struct {
             },
             // an open paren (not in the context of a function)
             .TokenOParen => {
-                return parseBeginWithOParen(l, alloc);
+                const expr = parseBeginWithOParen(l, alloc);
+                l.expect(.TokenCParen);
+                l.nexti();
+                return expr;
             },
             else => {},
         }
@@ -342,7 +373,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .Paren;
             },
-            .TokenAssign, .TokenComma => |t| {
+            .TokenAssign, .TokenComma, .TokenSemicolon => |t| {
                 l.token = t;
                 l.tokenType = .Other;
             },
@@ -425,6 +456,11 @@ pub const Lexer = struct {
             ',' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.TokenComma);
+                return true;
+            },
+            ';' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.TokenSemicolon);
                 return true;
             },
             else => {},
@@ -540,6 +576,7 @@ const TokenKind = enum {
 
     // others
     TokenComma,
+    TokenSemicolon,
     TokenNone,
     TokenEnd,
 };
