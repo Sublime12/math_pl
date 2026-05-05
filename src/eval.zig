@@ -19,6 +19,7 @@ const panic = std.debug.panic;
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
 const Context = struct {
     funs: Funs,
+    alloc: Allocator,
 };
 
 pub fn buildContext(program: Expr, alloc: Allocator) !Context {
@@ -29,7 +30,7 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
-    return .{ .funs = functions };
+    return .{ .funs = functions, .alloc = alloc };
 }
 
 pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
@@ -49,19 +50,39 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
         .fn_call => |fn_call| {
             return eval_fn_call(fn_call, ctx, local_vars);
         },
-        else => {},
+        .fn_def => {
+            return expr;
+        },
+        .list => |list| {
+            var list_evaluated: std.ArrayList(Expr) = .empty;
+            for (list.items) |el_expr| {
+                const new_expr = eval(el_expr, ctx, local_vars);
+                list_evaluated.append(ctx.alloc, new_expr) catch unreachable;
+            }
+            return .{ .list = list_evaluated };
+        },
     }
-    unreachable;
 }
 
 fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
-    _ = expr;
-    _ = local_vars;
-    _ = ctx;
-    panic(
-        "Can not evaluate fn_call for now, we need to pass program context containing function definitions",
-        .{},
-    );
+    const fn_def = ctx.funs.get(expr.name) orelse {
+        panic("Called this function {s} but it does not exist\n", .{expr.name});
+    };
+    var fn_params: Vars = .init(ctx.alloc);
+    assert(expr.args.items.len == fn_def.args.items.len);
+    for (0..expr.args.items.len) |i| {
+        const arg = expr.args.items[i];
+        const arg_name = fn_def.args.items[i];
+        const arg_eval = eval(arg, ctx, local_vars);
+        assert(arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
+        const var_: Var = if (arg_eval.tag() == .bool_)
+            .{ .bool_ = arg_eval.bool_.constant }
+        else
+            .{ .int = arg_eval.arith.constant };
+        fn_params.putNoClobber(arg_name, var_) catch unreachable;
+    }
+
+    return eval(fn_def.body.*, ctx, fn_params);
 }
 
 fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {

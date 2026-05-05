@@ -26,9 +26,9 @@ pub fn main() !void {
     // The main program is going to be all expressions that are
     // not function declaration in the global scope
     const source_code =
-        \\    if 1 + a - 7 + 1 + 2
+        \\    if 1 + a - 7 + 1 + 2 == 0
         \\    then 1
-        \\    else 143 + double(6, if i then 0 else 9) * 3 + (if b then 3 else c) ;
+        \\    else 143 + double(if 3 == 2 then 0 else 9) * 3 + (if b then 3 else c) ;
         \\    let double = fn n -> n * 2 ;
         \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
     ;
@@ -71,9 +71,9 @@ pub fn main() !void {
         std.debug.print("fn {s}\n", .{name});
     }
 
-    // const new_expr = eval(expr, ctx, local_vars);
-    // std.debug.print("new expr: \n", .{});
-    // new_expr.print();
+    const new_expr = eval(expr, ctx, local_vars);
+    std.debug.print("new expr: \n", .{});
+    new_expr.print();
     // //
     // std.debug.print("new expr: ", .{});
     // new_expr.print();
