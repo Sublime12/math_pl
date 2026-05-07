@@ -25,12 +25,14 @@ pub fn main() !void {
 
     // The main program is going to be all expressions that are
     // not function declaration in the global scope
+    // print(ascii_code), print the char corresponding to that ascii code
     const source_code =
-        \\    if 1 + a - 7 + 1 + 2 == 0
-        \\    then 1
-        \\    else 143 + double(if 3 == 2 then 0 else 9) * 3 + (if b then 3 else c) ;
-        \\    let double = fn n -> n * 2 ;
-        \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
+        \\ print(128, );
+        // \\    if 1 + a - 7 + 1 + 2 == 0
+        // \\    then 1
+        // \\    else 143 + double(if 3 == 2 then 0 else 9,) * 3 + (if b then 3 else c) ;
+        // \\    let double = fn n -> n * 2 ;
+        // \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
     ;
 
     var lexer = Lexer.init(source_code);

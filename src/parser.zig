@@ -148,15 +148,9 @@ pub const Parser = struct {
     }
 
     fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
-        var args = ArgsExpr.empty;
         l.expect(.TokenOParen);
         l.nexti();
-        while (true) {
-            const expr = try parseExpr(l, alloc);
-            try args.append(alloc, expr);
-            if (l.token != .TokenComma) break;
-            l.nexti();
-        }
+        const args = try parseArgs(l, alloc);
         l.expect(.TokenCParen);
         l.nexti();
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
@@ -228,7 +222,7 @@ pub const Parser = struct {
             .TokenId, .TokenInt => {
                 return parseBeginWithIdOrInt(l, alloc);
             },
-            .TokenSelfFn => {
+            .TokenSelfFn, .TokenPrint => {
                 const name = l.name.toStr(l.content);
                 l.nexti();
                 l.expect(.TokenOParen);
@@ -369,7 +363,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .BoolOp;
             },
-            .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn => |t| {
+            .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn, .TokenPrint => |t| {
                 l.token = t;
                 l.tokenType = .Keyword;
             },
@@ -496,6 +490,9 @@ pub const Lexer = struct {
             } else if (eql("else", l.name.toStr(l.content))) {
                 l.setToken(.TokenElse);
                 return true;
+            } else if (eql("print", l.name.toStr(l.content))) {
+                l.setToken(.TokenPrint);
+                return true;
             } else if (std.ascii.isDigit(l.name.toStr(l.content)[0])) {
                 const number = std.fmt.parseInt(i32, l.name.toStr(l.content), 10) catch {
                     panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
@@ -573,6 +570,7 @@ const TokenKind = enum {
     TokenIf,
     TokenSelfFn,
     TokenThen,
+    TokenPrint,
 
     // primary
     TokenInt,
