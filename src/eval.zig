@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const expression_pkg = @import("expression.zig");
+const stdlib_pkg = @import("stdlib.zig");
 
 const Allocator = std.mem.Allocator;
 
@@ -14,6 +15,8 @@ const FnExpr = expression_pkg.FnExpr;
 
 const assert = std.debug.assert;
 const panic = std.debug.panic;
+
+const print = stdlib_pkg.print;
 
 // Because functions are meant to be fun to use :)
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -65,6 +68,11 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
 }
 
 fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
+    if (std.mem.eql(u8, expr.name, "print")) {
+        const arg = eval(expr.args.items[0], ctx, local_vars);
+        print(arg.arith.constant);
+        return .{ .bool_ = .{ .constant = false }};
+    }
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };

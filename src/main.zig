@@ -27,7 +27,7 @@ pub fn main() !void {
     // not function declaration in the global scope
     // print(ascii_code), print the char corresponding to that ascii code
     const source_code =
-        \\ print(128, );
+        \\ print(97 + (if 2 == 7 then (0 - 1) else (1)), );
         // \\    if 1 + a - 7 + 1 + 2 == 0
         // \\    then 1
         // \\    else 143 + double(if 3 == 2 then 0 else 9,) * 3 + (if b then 3 else c) ;
