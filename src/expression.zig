@@ -128,6 +128,10 @@ pub const ArithExpr = union(ArithTag) {
             .constant => |expr| std.debug.print("{}", .{expr}),
         }
     }
+
+    pub fn tag(self: Self) ArithTag {
+        return @as(ArithTag, self);
+    }
 };
 
 pub const BinOp = struct {

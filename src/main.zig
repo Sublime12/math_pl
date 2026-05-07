@@ -11,7 +11,7 @@ const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
 const Vars = eval_pkg.Vars;
 
-const expectEqual = std.testing.expectEqual;
+const expect = std.testing.expectEqual;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 const buildContext = eval_pkg.buildContext;
@@ -95,7 +95,14 @@ test "simple fn expression" {
     var lexer = Lexer.init(source_code);
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
-    try expectEqual(.list, expr.tag());
+    try expect(.list, expr.tag());
     const fn_call = expr.list.items[0];
-    try expectEqual(.fn_call, fn_call.tag());
+    try expect(.fn_call, fn_call.tag());
+
+    const args = fn_call.fn_call.args;
+    try expect(1, args.items.len);
+    const arg = args.items[0];
+    try expect(.arith, arg.tag());
+    try expect(.constant, arg.arith.tag());
+    try expect(97, arg.arith.constant);
 }
