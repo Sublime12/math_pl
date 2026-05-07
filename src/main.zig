@@ -11,6 +11,7 @@ const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
 const Vars = eval_pkg.Vars;
 
+const expectEqual = std.testing.expectEqual;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 const buildContext = eval_pkg.buildContext;
@@ -83,26 +84,18 @@ pub fn main() !void {
 }
 
 test "simple fn expression" {
-    const allocator = std.testing.allocator;
-    var eql_expr: Expr = .{ .bool_ = .{
-        .eql = .{
-            .lhs = &.{ .var_ = "n" },
-            .rhs = &.{ .arith = .{ .constant = 0 } },
-        },
-    } };
-    var then: Expr = .{
-        .arith = .{ .constant = 1 },
-    };
-    var else_: Expr = .{ .var_ = "n" };
-
-    const if_expr: IfExpr = .{ .eval = &eql_expr, .then = &then, .else_ = &else_ };
-
-    var args = std.ArrayList([]const u8).empty;
-    defer args.deinit(allocator);
-    try args.append(allocator, "a");
-    try args.append(allocator, "b");
-    try args.append(allocator, "c");
-    const fn_expr: FnExpr = FnExpr.init("fact", args, &.{ .if_ = if_expr });
-
-    std.debug.print("fn fact: {}\n", .{fn_expr});
+    // For now use an arena alloc because we don't free memory
+    const backed_alloc = std.testing.allocator;
+    var arena = std.heap.ArenaAllocator.init(backed_alloc);
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const source_code =
+        \\ print(97, );
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+    try expectEqual(.list, expr.tag());
+    const fn_call = expr.list.items[0];
+    try expectEqual(.fn_call, fn_call.tag());
 }
