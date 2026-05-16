@@ -36,6 +36,7 @@ pub const Lexer = struct {
     token: TokenKind,
     tokenType: TokenType,
     integer_value: ?i32,
+    bool_value: ?bool,
     cursor: Cursor,
     name: SliceId,
 
@@ -46,6 +47,7 @@ pub const Lexer = struct {
             .cursor = .empty,
             .name = .empty,
             .integer_value = null,
+            .bool_value = null,
             .tokenType = .None,
         };
     }
@@ -94,7 +96,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .Other;
             },
-            .TokenId, .TokenInt => |t| {
+            .TokenId, .TokenInt, .TokenBool => |t| {
                 l.token = t;
                 l.tokenType = .Primary;
             },
@@ -212,6 +214,14 @@ pub const Lexer = struct {
             } else if (eql("print", l.name.toStr(l.content))) {
                 l.setToken(.TokenPrint);
                 return true;
+            } else if (eql("true", l.name.toStr(l.content))) {
+                l.setToken(.TokenBool);
+                l.bool_value = true;
+                return true;
+            } else if (eql("false", l.name.toStr(l.content))) {
+                l.setToken(.TokenBool);
+                l.bool_value = false;
+                return true;
             } else if (std.ascii.isDigit(l.name.toStr(l.content)[0])) {
                 const number = std.fmt.parseInt(i32, l.name.toStr(l.content), 10) catch {
                     panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
@@ -293,6 +303,7 @@ const TokenKind = enum {
 
     // primary
     TokenInt,
+    TokenBool,
     TokenId,
 
     // others
