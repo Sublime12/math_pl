@@ -1,13 +1,35 @@
 const std = @import("std");
 
-pub const FnExpr = struct {
+const expression_pkg = @import("expression.zig");
+
+const FnExprTag = enum { fn_std, fn_binding };
+
+pub const FnExpr = union(FnExprTag) {
+    const Self = @This();
+    fn_std: FnStdExpr,
+    fn_binding: FnBindingExpr,
+
+    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
+        return .{ .fn_std = FnStdExpr.init(name, args, body) };
+    }
+
+    pub fn print(self: Self) void {
+        self.fn_std.print();
+    }
+};
+
+pub const FnBindingExpr = struct {
+    fn_: *const fn (args: std.ArrayList(Expr)) Expr,
+};
+
+pub const FnStdExpr = struct {
     const Self = @This();
 
     name: []const u8,
     args: std.ArrayList([]const u8),
     body: *const Expr,
 
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
+    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnStdExpr {
         return .{
             .name = name,
             .args = args,
