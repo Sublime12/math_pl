@@ -42,7 +42,7 @@ pub fn main() !void {
     while (lexer.next()) {
         std.debug.print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
             lexer.token,
-            if (lexer.token != .TokenEnd) lexer.name.toStr(lexer.content) else "$$",
+            if (lexer.token != .TokenEnd) lexer.name.asStr(lexer.content) else "$$",
             lexer.tokenType,
         });
         if (lexer.token == .TokenEnd) break;

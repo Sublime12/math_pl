@@ -45,7 +45,7 @@ pub const Parser = struct {
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.TokenId);
-        const id = l.name.toStr(l.content);
+        const id = l.name.asStr(l.content);
         l.nexti();
         l.expect(.TokenAssign);
         l.nexti();
@@ -53,7 +53,7 @@ pub const Parser = struct {
         l.nexti();
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .TokenId) {
-            try args.append(alloc, l.name.toStr(l.content));
+            try args.append(alloc, l.name.asStr(l.content));
             l.nexti();
         }
         l.expect(.TokenArrow);
@@ -74,7 +74,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     fn parseBeginWithIdOrInt(l: *Lexer, alloc: Allocator) !Expr {
-        const name = l.name.toStr(l.content);
+        const name = l.name.asStr(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
         if (l.token == .TokenId) {
@@ -105,7 +105,7 @@ pub const Parser = struct {
             next_l = l.*;
             next_l.nexti();
 
-            const current_name = l.name.toStr(l.content);
+            const current_name = l.name.asStr(l.content);
             rhs.* = switch (l.token) {
                 .TokenId => if (next_l.token == .TokenOParen) blk: {
                     l.nexti();
@@ -225,7 +225,7 @@ pub const Parser = struct {
                 return parseBeginWithIdOrInt(l, alloc);
             },
             .TokenSelfFn, .TokenPrint => {
-                const name = l.name.toStr(l.content);
+                const name = l.name.asStr(l.content);
                 l.nexti();
                 l.expect(.TokenOParen);
                 l.nexti();
@@ -246,7 +246,7 @@ pub const Parser = struct {
 
         panic(
             "Panic with token {}, value: {s}",
-            .{ l.token, l.name.toStr(l.content) },
+            .{ l.token, l.name.asStr(l.content) },
         );
     }
 

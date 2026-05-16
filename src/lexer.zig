@@ -13,7 +13,7 @@ const SliceId = struct {
     first: usize,
     end: usize,
 
-    pub fn toStr(self: Self, content: []const u8) []const u8 {
+    pub fn asStr(self: Self, content: []const u8) []const u8 {
         return content[self.first..self.end];
     }
 
@@ -59,7 +59,7 @@ pub const Lexer = struct {
                 l.token,
                 l.cursor.row,
                 l.cursor.col,
-                l.name.toStr(l.content),
+                l.name.asStr(l.content),
                 l.integer_value,
             });
         }
@@ -193,38 +193,38 @@ pub const Lexer = struct {
                 _ = l.next_char();
             }
 
-            if (eql("let", l.name.toStr(l.content))) {
+            if (eql("let", l.name.asStr(l.content))) {
                 l.setToken(.TokenLet);
                 return true;
-            } else if (eql("if", l.name.toStr(l.content))) {
+            } else if (eql("if", l.name.asStr(l.content))) {
                 l.setToken(.TokenIf);
                 return true;
-            } else if (eql("self_fn", l.name.toStr(l.content))) {
+            } else if (eql("self_fn", l.name.asStr(l.content))) {
                 l.setToken(.TokenSelfFn);
                 return true;
-            } else if (eql("fn", l.name.toStr(l.content))) {
+            } else if (eql("fn", l.name.asStr(l.content))) {
                 l.setToken(.TokenFn);
                 return true;
-            } else if (eql("then", l.name.toStr(l.content))) {
+            } else if (eql("then", l.name.asStr(l.content))) {
                 l.setToken(.TokenThen);
                 return true;
-            } else if (eql("else", l.name.toStr(l.content))) {
+            } else if (eql("else", l.name.asStr(l.content))) {
                 l.setToken(.TokenElse);
                 return true;
-            } else if (eql("print", l.name.toStr(l.content))) {
+            } else if (eql("print", l.name.asStr(l.content))) {
                 l.setToken(.TokenPrint);
                 return true;
-            } else if (eql("true", l.name.toStr(l.content))) {
+            } else if (eql("true", l.name.asStr(l.content))) {
                 l.setToken(.TokenBool);
                 l.bool_value = true;
                 return true;
-            } else if (eql("false", l.name.toStr(l.content))) {
+            } else if (eql("false", l.name.asStr(l.content))) {
                 l.setToken(.TokenBool);
                 l.bool_value = false;
                 return true;
-            } else if (std.ascii.isDigit(l.name.toStr(l.content)[0])) {
-                const number = std.fmt.parseInt(i32, l.name.toStr(l.content), 10) catch {
-                    panic("Expected number, found: {s}", .{l.name.toStr(l.content)});
+            } else if (std.ascii.isDigit(l.name.asStr(l.content)[0])) {
+                const number = std.fmt.parseInt(i32, l.name.asStr(l.content), 10) catch {
+                    panic("Expected number, found: {s}", .{l.name.asStr(l.content)});
                 };
                 l.integer_value = number;
                 l.setToken(.TokenInt);
