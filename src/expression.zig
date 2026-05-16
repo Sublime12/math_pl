@@ -22,8 +22,15 @@ pub const FnExpr = struct {
     }
 
     pub fn print(self: Self) void {
-        _ = self;
-        std.debug.panic("Not yet implemented", .{});
+        std.debug.print("let {s} = fn ", .{self.name});
+        for (self.args.items) |arg| {
+            std.debug.print("{s} ", .{arg});
+        }
+        std.debug.print(" -> ", .{});
+        switch (self.body) {
+            .fn_binding => |_| std.debug.print("binding:  ...", .{}),
+            .fn_std => |fn_std| fn_std.print(),
+        }
     }
 };
 
@@ -57,11 +64,6 @@ pub const FnStdExpr = struct {
     }
 
     pub fn print(self: Self) void {
-        std.debug.print("let {s} = fn ", .{self.name});
-        for (self.args.items) |arg| {
-            std.debug.print("{s} ", .{arg});
-        }
-        std.debug.print(" -> ", .{});
         self.body.print();
     }
 };

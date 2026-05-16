@@ -71,7 +71,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
                 const new_expr = eval(el_expr, ctx, local_vars);
                 list_evaluated.append(ctx.alloc, new_expr) catch unreachable;
             }
-            return .{ .list = list_evaluated };
+            return list_evaluated.getLast();
         },
         .void_ => return expr,
     }
