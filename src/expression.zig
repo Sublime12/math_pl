@@ -1,16 +1,39 @@
 const std = @import("std");
 
-const expression_pkg = @import("expression.zig");
+const eval_pkg = @import("eval.zig");
+
+const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
 
-pub const FnExpr = union(FnExprTag) {
+pub const FnExpr = struct {
+    const Self = @This();
+
+    name: []const u8,
+    args: std.ArrayList([]const u8),
+    body: FnBody,
+
+    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
+        return .{
+            .name = name,
+            .args = args,
+            .body = FnBody.init(body),
+        };
+    }
+
+    pub fn print(self: Self) void {
+        _ = self;
+        std.debug.panic("Not yet implemented", .{});
+    }
+};
+
+pub const FnBody = union(FnExprTag) {
     const Self = @This();
     fn_std: FnStdExpr,
     fn_binding: FnBindingExpr,
 
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
-        return .{ .fn_std = FnStdExpr.init(name, args, body) };
+    pub fn init(body: *const Expr) FnExpr {
+        return .{ .fn_std = FnStdExpr.init(body) };
     }
 
     pub fn print(self: Self) void {
@@ -19,20 +42,16 @@ pub const FnExpr = union(FnExprTag) {
 };
 
 pub const FnBindingExpr = struct {
-    fn_: *const fn (args: std.ArrayList(Expr)) Expr,
+    fn_: *const fn (args: Vars) Expr,
 };
 
 pub const FnStdExpr = struct {
     const Self = @This();
 
-    name: []const u8,
-    args: std.ArrayList([]const u8),
     body: *const Expr,
 
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnStdExpr {
+    pub fn init(body: *const Expr) FnStdExpr {
         return .{
-            .name = name,
-            .args = args,
             .body = body,
         };
     }
@@ -55,6 +74,7 @@ pub const ExprTag = enum {
     fn_def,
     var_,
     list,
+    void_,
 };
 
 pub const Expr = union(ExprTag) {
@@ -67,6 +87,7 @@ pub const Expr = union(ExprTag) {
     fn_def: FnExpr,
     var_: []const u8,
     list: std.ArrayList(Expr),
+    void_: i32,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -82,6 +103,7 @@ pub const Expr = union(ExprTag) {
                     std.debug.print("; \n", .{});
                 }
             },
+            .void_ => std.debug.print("void", .{}),
         }
     }
 

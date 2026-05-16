@@ -2,14 +2,22 @@
 const std = @import("std");
 
 const expression_pkg = @import("expression.zig");
+const eval_pkg = @import("eval.zig");
 
 const Expr = expression_pkg.Expr;
+const Vars = eval_pkg.Vars;
 
 const assert = std.debug.assert;
 
-pub fn print(expr: Expr) void {
-    assert(expr.tag() == .arith and expr.arith.tag() == .constant);
-    print_ascii(expr.arith.constant);
+pub fn print(vars: Vars) Expr {
+    // assert(vars.tag() == .arith and vars.arith.tag() == .constant);
+    assert(vars.count() == 1);
+    assert(vars.contains("c"));
+    const c = vars.get("c").?;
+    assert(c.tag() == .int);
+
+    print_ascii(c.int);
+    return .{ .void_ = 0 };
 }
 
 pub fn print_ascii(ascii: i32) void {

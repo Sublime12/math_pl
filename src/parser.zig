@@ -60,11 +60,11 @@ pub const Parser = struct {
         const body = try alloc.create(Expr);
         body.* = try parseExpr(l, alloc);
 
-        const fn_expr: FnExpr = .{ .fn_std = .{
+        const fn_expr: FnExpr = .{
             .name = id,
             .args = args,
-            .body = body,
-        } };
+            .body = .{ .fn_std = .{ .body = body } },
+        };
         return .{ .fn_def = fn_expr };
     }
 

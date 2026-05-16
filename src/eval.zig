@@ -30,9 +30,18 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
     var functions: Funs = .empty;
     for (program.list.items) |expr| {
         if (expr.tag() == .fn_def) {
-            try functions.put(alloc, expr.fn_def.fn_std.name, expr.fn_def);
+            try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
+    var print_args: std.ArrayList([]const u8) = .empty;
+    try print_args.append(alloc, "c");
+
+    const print_fn: FnExpr = .{
+        .name = "print",
+        .args = print_args,
+        .body = .{ .fn_binding = .{ .fn_ = print } },
+    };
+    try functions.put(alloc, "print", print_fn);
     return .{ .funs = functions, .alloc = alloc };
 }
 
@@ -64,23 +73,24 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             }
             return .{ .list = list_evaluated };
         },
+        .void_ => return expr,
     }
 }
 
 fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
-    if (std.mem.eql(u8, expr.name, "print")) {
-        const arg = eval(expr.args.items[0], ctx, local_vars);
-        print(arg);
-        return .{ .bool_ = .{ .constant = false } };
-    }
+    // if (std.mem.eql(u8, expr.name, "print")) {
+    //     const arg = eval(expr.args.items[0], ctx, local_vars);
+    //     print(arg);
+    //     return .{ .bool_ = .{ .constant = false } };
+    // }
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
     var fn_params: Vars = .init(ctx.alloc);
-    assert(expr.args.items.len == fn_def.fn_std.args.items.len);
+    // assert(expr.args.items.len == fn_def.fn_std.args.items.len);
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
-        const arg_name = fn_def.fn_std.args.items[i];
+        const arg_name = fn_def.args.items[i];
         const arg_eval = eval(arg, ctx, local_vars);
         assert(arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
         const var_: Var = if (arg_eval.tag() == .bool_)
@@ -90,7 +100,14 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
     }
 
-    return eval(fn_def.fn_std.body.*, ctx, fn_params);
+    return eval_fn(fn_def, ctx, fn_params);
+}
+
+fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars) Expr {
+    return switch (fn_def.body) {
+        .fn_std => |fn_std| eval(fn_std.body.*, ctx, fn_params),
+        .fn_binding => |fn_binding| fn_binding.fn_(fn_params),
+    };
 }
 
 fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
