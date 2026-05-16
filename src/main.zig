@@ -1,9 +1,10 @@
 const std = @import("std");
 const parser_pkg = @import("parser.zig");
+const lexer_pkg = @import("lexer.zig");
 const expression_pkg = @import("expression.zig");
 const eval_pkg = @import("eval.zig");
 
-const Lexer = parser_pkg.Lexer;
+const Lexer = lexer_pkg.Lexer;
 const FnExpr = expression_pkg.FnExpr;
 const BoolExpr = expression_pkg.BoolExpr;
 const Expr = expression_pkg.Expr;
