@@ -32,9 +32,7 @@ pub fn main() !void {
         // \\ print(98 + (if 2 == 2 then (0 - 1) else (1)), );
         \\    let double = fn n -> n * 2 ;
         \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
-        \\    if 1 + a - 7 + 1 + 2 == 0
-        \\    then 1
-        \\    else 143 + double(if 3 == 2 then 0 else 9,) * 3 + (if b then 3 else c) ;
+        \\    print_ascii(32, ) ;
     ;
 
     var lexer = Lexer.init(source_code);

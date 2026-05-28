@@ -82,8 +82,8 @@ pub const Parser = struct {
                 .TokenOParen => blk: {
                     l.nexti();
                     const expr = try parseFnCall(l, alloc, name);
-                    l.expect(.TokenCParen);
-                    l.nexti();
+                    // l.expect(.TokenCParen);
+                    // l.nexti();
                     break :blk expr;
                 },
                 else => blk: {
@@ -224,7 +224,7 @@ pub const Parser = struct {
             .TokenId, .TokenInt => {
                 return parseBeginWithIdOrInt(l, alloc);
             },
-            .TokenSelfFn, .TokenPrint => {
+            .TokenSelfFn => {
                 const name = l.name.asStr(l.content);
                 l.nexti();
                 l.expect(.TokenOParen);
