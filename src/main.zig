@@ -33,12 +33,6 @@ pub fn main() !void {
 
     const alloc = std.heap.page_allocator;
     const args = try std.process.argsAlloc(alloc);
-
-    for (args) |arg| {
-        print("{s} ", .{arg});
-    }
-    print("\n", .{});
-
     assert(args.len == 2);
 
     const file_path = args[1];
@@ -50,31 +44,17 @@ pub fn main() !void {
     const source_code = try file.readToEndAlloc(alloc, MAX_SIZE);
     defer alloc.free(source_code);
 
-    std.debug.print("{s}", .{source_code});
-
     var lexer = Lexer.init(source_code);
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
-
-    expr.print();
-    print("\n", .{});
 
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
     const ctx = try buildContext(expr, alloc);
 
-    var it = ctx.funs.iterator();
-
-    while (it.next()) |fn_expr| {
-        const name = fn_expr.key_ptr.*;
-        print("fn {s}\n", .{name});
-    }
-
-    const new_expr = eval(expr, ctx, local_vars);
-    print("new expr: \n", .{});
-    new_expr.print();
+    _ = eval(expr, ctx, local_vars);
     print("\n", .{});
 }
 

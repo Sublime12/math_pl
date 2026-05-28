@@ -33,7 +33,6 @@ pub const Parser = struct {
         var program: std.ArrayList(Expr) = .empty;
         var i: i32 = 0;
         while (self.lexer.token != .TokenEnd) {
-            std.debug.print("IIIII = {}\n", .{i});
             const expr = try parseExpr(self.lexer, self.alloc);
             self.lexer.expect(.TokenSemicolon);
             self.lexer.nexti();
