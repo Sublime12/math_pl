@@ -4,6 +4,8 @@ const lexer_pkg = @import("lexer.zig");
 const expression_pkg = @import("expression.zig");
 const eval_pkg = @import("eval.zig");
 
+const ArenaAllocator = std.heap.ArenaAllocator;
+
 const Lexer = lexer_pkg.Lexer;
 const FnExpr = expression_pkg.FnExpr;
 const BoolExpr = expression_pkg.BoolExpr;
@@ -58,10 +60,14 @@ pub fn main() !void {
     print("\n", .{});
 }
 
+fn arena_alloc() ArenaAllocator {
+    const backed_alloc = std.testing.allocator;
+    return std.heap.ArenaAllocator.init(backed_alloc);
+}
+
 test "simple fn expression" {
     // For now use an arena alloc because we don't free memory
-    const backed_alloc = std.testing.allocator;
-    var arena = std.heap.ArenaAllocator.init(backed_alloc);
+    var arena = arena_alloc();
     defer arena.deinit();
     const alloc = arena.allocator();
     const source_code =
@@ -80,4 +86,18 @@ test "simple fn expression" {
     try expect(.arith, arg.tag());
     try expect(.constant, arg.arith.tag());
     try expect(97, arg.arith.constant);
+}
+
+test "parse string" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const source_code =
+        \\\ "" Hello "World" ""
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+    expr.print();
+    std.debug.print("\n", .{});
 }
