@@ -41,23 +41,18 @@ pub fn main() !void {
 
     assert(args.len == 2);
 
-    const source_code =
-        \\  let double = fn n -> n * 2;
-        \\  let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
-        \\  let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2;
-        \\  print_int(fact(5, ), ) ;
-    ;
+    const file_path = args[1];
+    const file = try std.fs.cwd().openFile(file_path, .{});
+    defer file.close();
+
+    const MAX_SIZE = 1024 * 1024;
+
+    const source_code = try file.readToEndAlloc(alloc, MAX_SIZE);
+    defer alloc.free(source_code);
+
+    std.debug.print("{s}", .{source_code});
 
     var lexer = Lexer.init(source_code);
-
-    // while (lexer.next()) {
-    //     print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
-    //         lexer.token,
-    //         if (lexer.token != .TokenEnd) lexer.name.asStr(lexer.content) else "$$",
-    //         lexer.tokenType,
-    //     });
-    //     if (lexer.token == .TokenEnd) break;
-    // }
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
