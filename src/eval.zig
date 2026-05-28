@@ -47,7 +47,7 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
     const print_int_fn: FnExpr = .{
         .name = "print_int",
         .args = print_int_args,
-        .body = .{ .fn_binding = .{ .fn_ = print_int }},
+        .body = .{ .fn_binding = .{ .fn_ = print_int } },
     };
     try functions.put(alloc, "print", print_fn);
     try functions.put(alloc, "print_int", print_int_fn);

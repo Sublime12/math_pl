@@ -12,6 +12,8 @@ const IfExpr = expression_pkg.IfExpr;
 const Parser = parser_pkg.Parser;
 const Vars = eval_pkg.Vars;
 
+const assert = std.debug.assert;
+const print = std.debug.print;
 const expect = std.testing.expectEqual;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
@@ -28,59 +30,57 @@ pub fn main() !void {
     // The main program is going to be all expressions that are
     // not function declaration in the global scope
     // print(ascii_code), print the char corresponding to that ascii code
+
+    const alloc = std.heap.page_allocator;
+    const args = try std.process.argsAlloc(alloc);
+
+    for (args) |arg| {
+        print("{s} ", .{arg});
+    }
+    print("\n", .{});
+
+    assert(args.len == 2);
+
     const source_code =
-        // \\ print(98 + (if 2 == 2 then (0 - 1) else (1)), );
-        \\    let double = fn n -> n * 2 ;
-        \\    let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2 ;
-        \\    print_int(32, ) ;
+        \\  let double = fn n -> n * 2;
+        \\  let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
+        \\  let x = fn n -> if n + 1 - 3 == (2 + 7 + n) then 5 else n * 2;
+        \\  print_int(fact(5, ), ) ;
     ;
 
     var lexer = Lexer.init(source_code);
 
-    while (lexer.next()) {
-        std.debug.print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
-            lexer.token,
-            if (lexer.token != .TokenEnd) lexer.name.asStr(lexer.content) else "$$",
-            lexer.tokenType,
-        });
-        if (lexer.token == .TokenEnd) break;
-    }
+    // while (lexer.next()) {
+    //     print("Token: {t:<15} value: {s:<20}, type: {t:<15}\n", .{
+    //         lexer.token,
+    //         if (lexer.token != .TokenEnd) lexer.name.asStr(lexer.content) else "$$",
+    //         lexer.tokenType,
+    //     });
+    //     if (lexer.token == .TokenEnd) break;
+    // }
 
-    const alloc = std.heap.page_allocator;
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
     expr.print();
-    std.debug.print("\n", .{});
+    print("\n", .{});
 
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    try local_vars.put("a", .{ .int = 5 });
-    try local_vars.put("b", .{ .bool_ = true });
-    try local_vars.put("c", .{ .int = 5 });
-
-    // var it = local_vars.iterator();
-    // while (it.next()) |value| {
-    //     std.debug.print("key: {s}, value: {}\n", .{ value.key_ptr.*, value.value_ptr });
-    // }
     const ctx = try buildContext(expr, alloc);
 
     var it = ctx.funs.iterator();
 
     while (it.next()) |fn_expr| {
         const name = fn_expr.key_ptr.*;
-        std.debug.print("fn {s}\n", .{name});
+        print("fn {s}\n", .{name});
     }
 
     const new_expr = eval(expr, ctx, local_vars);
-    std.debug.print("new expr: \n", .{});
+    print("new expr: \n", .{});
     new_expr.print();
-    std.debug.print("\n", .{});
-    // //
-    // std.debug.print("new expr: ", .{});
-    // new_expr.print();
-    // std.debug.print("\n", .{});
+    print("\n", .{});
 }
 
 test "simple fn expression" {
