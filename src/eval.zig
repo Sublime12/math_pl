@@ -17,6 +17,7 @@ const assert = std.debug.assert;
 const panic = std.debug.panic;
 
 const print = stdlib_pkg.print;
+const print_int = stdlib_pkg.print_int;
 
 // Because functions are meant to be fun to use :)
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -41,7 +42,15 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
         .args = print_args,
         .body = .{ .fn_binding = .{ .fn_ = print } },
     };
+    var print_int_args: std.ArrayList([]const u8) = .empty;
+    try print_int_args.append(alloc, "c");
+    const print_int_fn: FnExpr = .{
+        .name = "print_int",
+        .args = print_int_args,
+        .body = .{ .fn_binding = .{ .fn_ = print_int }},
+    };
     try functions.put(alloc, "print", print_fn);
+    try functions.put(alloc, "print_int", print_int_fn);
     return .{ .funs = functions, .alloc = alloc };
 }
 
