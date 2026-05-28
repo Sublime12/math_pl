@@ -82,8 +82,6 @@ pub const Parser = struct {
                 .TokenOParen => blk: {
                     l.nexti();
                     const expr = try parseFnCall(l, alloc, name);
-                    // l.expect(.TokenCParen);
-                    // l.nexti();
                     break :blk expr;
                 },
                 else => blk: {
