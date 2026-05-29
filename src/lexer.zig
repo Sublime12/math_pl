@@ -6,6 +6,8 @@ const eql = std.ascii.eqlIgnoreCase;
 const panic = std.debug.panic;
 const print = std.debug.print;
 
+const expectStrings = std.testing.expectEqualStrings;
+
 // A slice indexing where is the id
 // in the content
 const SliceId = struct {
@@ -390,3 +392,22 @@ const Cursor = struct {
         .row = 0,
     };
 };
+
+test "parse string" {
+    const source_code =
+        \\ """"""bon "abc" x""""""
+        \\ "amis "
+        \\ ""a""
+        \\ "a\n"
+    ;
+    var lexer = Lexer.init(source_code);
+
+    lexer.nexti();
+    try expectStrings("bon \"abc\" x", lexer.name.asStr(lexer.content));
+    lexer.nexti();
+    try expectStrings("amis ", lexer.name.asStr(lexer.content));
+    lexer.nexti();
+    try expectStrings("a", lexer.name.asStr(lexer.content));
+    lexer.nexti();
+    try expectStrings("a\\n", lexer.name.asStr(lexer.content));
+}

@@ -16,10 +16,10 @@ const Vars = eval_pkg.Vars;
 
 const assert = std.debug.assert;
 const print = std.debug.print;
-const expect = std.testing.expectEqual;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 const buildContext = eval_pkg.buildContext;
+const expect = std.testing.expectEqual;
 
 pub fn main() !void {
     // const source_code =
@@ -88,30 +88,3 @@ test "simple fn expression" {
     try expect(97, arg.arith.constant);
 }
 
-test "parse string" {
-    const source_code =
-        \\ """"""bon "abc" x"""""" if 
-        \\ "amis "
-
-    ;
-    var lexer = Lexer.init(source_code);
-
-    var i: usize = 0;
-    while (lexer.next()) {
-        if (lexer.token == .TokenEnd) break;
-        print("token = {} |{s}|, cursor{}\n", .{
-            lexer.token,
-            lexer.name.asStr(lexer.content),
-            lexer.cursor,
-        });
-        i += 1;
-    }
-
-    // var arena = arena_alloc();
-    // defer arena.deinit();
-    // const alloc = arena.allocator();
-    // var parser = Parser.init(&lexer, alloc);
-    // const expr = try parser.parse();
-    // expr.print();
-    // std.debug.print("\n", .{});
-}
