@@ -88,3 +88,25 @@ test "simple fn expression" {
     try expect(97, arg.arith.constant);
 }
 
+test "print string" {
+    // For now use an arena alloc because we don't free memory
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const source_code =
+        \\ print_str("bonjour"+"papa"+enfant+2+"salut", );
+    ;
+    var lexer = Lexer.init(source_code);
+
+    while (lexer.next()) {
+        print("token: {}, str: {s}, int: {?}\n", .{lexer.token, lexer.name.asStr(lexer.content), lexer.integer_value},);
+        if (lexer.token == .TokenEnd) break;
+    }
+
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+    try expect(.list, expr.tag());
+
+    print("parse bonjour => : \n", .{});
+    expr.print();
+}

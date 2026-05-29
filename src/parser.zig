@@ -91,7 +91,10 @@ pub const Parser = struct {
         } else if (l.token == .TokenInt) {
             lhs.* = .{ .arith = .{ .constant = l.integer_value.? } };
             l.nexti();
-        }
+        } else if (l.token == .TokenStr) {
+            lhs.* = .{ .arith = .{ .str = l.name.asStr(l.content) } };
+            l.nexti();
+        } else if (l.tokenType == .Primary) panic("Must be identifier, integer or string", .{});
 
         while (l.tokenType == .ArithOp or l.tokenType == .BoolOp) {
             const op_token = l.token;
@@ -115,6 +118,10 @@ pub const Parser = struct {
                 .TokenInt => blk: {
                     l.nexti();
                     break :blk .{ .arith = .{ .constant = l.integer_value.? } };
+                },
+                .TokenStr => blk: {
+                    l.nexti();
+                    break :blk .{ .arith = .{ .str = current_name } };
                 },
                 else => blk: {
                     const expr = try parseExpr(l, alloc);
@@ -218,7 +225,7 @@ pub const Parser = struct {
                 l.nexti();
                 return parseIf(l, alloc);
             },
-            .TokenId, .TokenInt => {
+            .TokenId, .TokenInt, .TokenStr => {
                 return parseBeginWithIdOrInt(l, alloc);
             },
             .TokenSelfFn => {

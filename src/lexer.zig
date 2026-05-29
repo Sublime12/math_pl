@@ -260,11 +260,13 @@ pub const Lexer = struct {
             if (c == '"') {
                 var count: usize = 1;
                 for (0..MAX_COMMA_STR) |_| {
-                    const c2 = l.next_char();
+                    const c2 = l.current_char();
                     if (c2 == '"') {
                         count += 1;
+                        _ = l.next_char();
                     } else {
-                        l.name.extend();
+                        // print("extend here???\n", .{});
+                        // l.name.extend();
                         break;
                     }
                 }
@@ -276,7 +278,10 @@ pub const Lexer = struct {
                     for (0..count) |_| {
                         l.name.extend();
                     }
-                } else break :loop;
+                } else {
+                    l.name.extend();
+                    break :loop;
+                }
             } else l.name.extend();
         }
     }
@@ -393,10 +398,10 @@ const Cursor = struct {
     };
 };
 
-test "parse string" {
+test "lex string" {
     const source_code =
-        \\ """"""bon "abc" x""""""
-        \\ "amis "
+        //       x                  x        x    x
+        \\ """"""bon "abc" x"""""" "amis "
         \\ ""a""
         \\ "a\n"
     ;
