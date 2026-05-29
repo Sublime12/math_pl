@@ -677,3 +677,33 @@ test "lex arithmetic operators and punctuation" {
     l.nexti();
     try expectEqual(.end, l.token);
 }
+
+test "lex core keywords" {
+    const source_code =
+        \\ let fn if then else
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectStrings("let", l.name.asStr(l.content));
+    try expectEqual(.let, l.token);
+
+    l.nexti();
+    try expectStrings("fn", l.name.asStr(l.content));
+    try expectEqual(.fn_, l.token);
+
+    l.nexti();
+    try expectStrings("if", l.name.asStr(l.content));
+    try expectEqual(.if_, l.token);
+
+    l.nexti();
+    try expectStrings("then", l.name.asStr(l.content));
+    try expectEqual(.then, l.token);
+
+    l.nexti();
+    try expectStrings("else", l.name.asStr(l.content));
+    try expectEqual(.else_, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
+}
