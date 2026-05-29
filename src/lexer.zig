@@ -410,53 +410,53 @@ test "lex string" {
         \\ ""a""
         \\ "a\n"
     ;
-    var lexer = Lexer.init(source_code);
+    var l = Lexer.init(source_code);
 
-    lexer.nexti();
-    try expectStrings("bon \"abc\" x", lexer.name.asStr(lexer.content));
-    lexer.nexti();
-    try expectStrings("amis ", lexer.name.asStr(lexer.content));
-    lexer.nexti();
-    try expectStrings("a", lexer.name.asStr(lexer.content));
-    lexer.nexti();
-    try expectStrings("a\\n", lexer.name.asStr(lexer.content));
+    l.nexti();
+    try expectStrings("bon \"abc\" x", l.name.asStr(l.content));
+    l.nexti();
+    try expectStrings("amis ", l.name.asStr(l.content));
+    l.nexti();
+    try expectStrings("a", l.name.asStr(l.content));
+    l.nexti();
+    try expectStrings("a\\n", l.name.asStr(l.content));
 }
 
 test "lex identifiers" {
     const source_code =
         \\ variable_name x123 _secret_id
     ;
-    var lexer = Lexer.init(source_code);
+    var l = Lexer.init(source_code);
 
-    lexer.nexti();
-    try expectStrings("variable_name", lexer.name.asStr(lexer.content));
-    try expectEqual(.id, lexer.token);
+    l.nexti();
+    try expectStrings("variable_name", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
 
-    lexer.nexti();
-    try expectStrings("x123", lexer.name.asStr(lexer.content));
-    try expectEqual(.id, lexer.token);
+    l.nexti();
+    try expectStrings("x123", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
 
-    lexer.nexti();
-    try expectStrings("_secret_id", lexer.name.asStr(lexer.content));
-    try expectEqual(.id, lexer.token);
+    l.nexti();
+    try expectStrings("_secret_id", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
 }
 
 test "lex integers" {
     const source_code =
         \\ 123 0 4567
     ;
-    var lexer = Lexer.init(source_code);
+    var l = Lexer.init(source_code);
 
-    lexer.nexti();
-    try expectEqual(123, lexer.integer_value);
-    try expectEqual(.int, lexer.token);
+    l.nexti();
+    try expectEqual(123, l.integer_value);
+    try expectEqual(.int, l.token);
 
-    lexer.nexti();
-    try expectEqual(0, lexer.integer_value);
-    try expectEqual(.int, lexer.token);
+    l.nexti();
+    try expectEqual(0, l.integer_value);
+    try expectEqual(.int, l.token);
 
-    lexer.nexti();
-    try expectStrings("4567", lexer.name.asStr(lexer.content));
-    try expectEqual(4567, lexer.integer_value);
-    try expectEqual(.int, lexer.token);
+    l.nexti();
+    try expectStrings("4567", l.name.asStr(l.content));
+    try expectEqual(4567, l.integer_value);
+    try expectEqual(.int, l.token);
 }
