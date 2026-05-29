@@ -575,3 +575,55 @@ test "lex if expression" {
     l.nexti();
     try expectEqual(.end, l.token);
 }
+
+test "lex bind and self_fn" {
+    const source_code =
+        \\ bind f = x;
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectStrings("bind", l.name.asStr(l.content));
+    try expectEqual(.bind, l.token);
+
+    l.nexti();
+    try expectStrings("f", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
+
+    l.nexti();
+    try expectStrings("=", l.name.asStr(l.content));
+    try expectEqual(.assign, l.token);
+
+    l.nexti();
+    try expectStrings("x", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
+}
+
+test "lex false and equality" {
+    const source_code =
+        \\ false == true
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectStrings("false", l.name.asStr(l.content));
+    try expectEqual(false, l.bool_value);
+    try expectEqual(.bool_, l.token);
+
+    l.nexti();
+    try expectStrings("==", l.name.asStr(l.content));
+    try expectEqual(.eql, l.token);
+
+    l.nexti();
+    try expectStrings("true", l.name.asStr(l.content));
+    try expectEqual(true, l.bool_value);
+    try expectEqual(.bool_, l.token);
+}
+
+test "lex empty input and end token" {
+    const source_code = "   ";
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
+}
