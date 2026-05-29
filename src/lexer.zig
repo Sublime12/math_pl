@@ -460,3 +460,18 @@ test "lex integers" {
     try expectEqual(4567, l.integer_value);
     try expectEqual(.int, l.token);
 }
+
+test "lex booleans" {
+    const source_code =
+        \\ true false
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectEqual(true, l.bool_value);
+    try expectEqual(.bool_, l.token);
+
+    l.nexti();
+    try expectEqual(false, l.bool_value);
+    try expectEqual(.bool_, l.token);
+}
