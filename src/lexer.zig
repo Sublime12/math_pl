@@ -420,6 +420,9 @@ test "lex string" {
     try expectStrings("a", l.name.asStr(l.content));
     l.nexti();
     try expectStrings("a\\n", l.name.asStr(l.content));
+
+    l.nexti();
+    try expectEqual(.end, l.token);
 }
 
 test "lex identifiers" {
@@ -439,6 +442,9 @@ test "lex identifiers" {
     l.nexti();
     try expectStrings("_secret_id", l.name.asStr(l.content));
     try expectEqual(.id, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
 }
 
 test "lex integers" {
@@ -459,6 +465,9 @@ test "lex integers" {
     try expectStrings("4567", l.name.asStr(l.content));
     try expectEqual(4567, l.integer_value);
     try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
 }
 
 test "lex booleans" {
@@ -474,4 +483,95 @@ test "lex booleans" {
     l.nexti();
     try expectEqual(false, l.bool_value);
     try expectEqual(.bool_, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
+}
+
+test "lex if expression" {
+    const source_code =
+        \\ if 1 + 3 = 7 then
+        \\ print_str("" hello "world" "",)
+        \\ else double(7) ;
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectStrings("if", l.name.asStr(l.content));
+    try expectEqual(.if_, l.token);
+
+    l.nexti();
+    try expectStrings("1", l.name.asStr(l.content));
+    try expectEqual(1, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("+", l.name.asStr(l.content));
+    try expectEqual(.plus, l.token);
+
+    l.nexti();
+    try expectStrings("3", l.name.asStr(l.content));
+    try expectEqual(3, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("=", l.name.asStr(l.content));
+    try expectEqual(.assign, l.token);
+
+    l.nexti();
+    try expectStrings("7", l.name.asStr(l.content));
+    try expectEqual(7, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("then", l.name.asStr(l.content));
+    try expectEqual(.then, l.token);
+
+    l.nexti();
+    try expectStrings("print_str", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
+
+    l.nexti();
+    try expectStrings("(", l.name.asStr(l.content));
+    try expectEqual(.oparen, l.token);
+
+    l.nexti();
+    try expectStrings(" hello \"world\" ", l.name.asStr(l.content));
+    try expectEqual(.str, l.token);
+
+    l.nexti();
+    try expectStrings(",", l.name.asStr(l.content));
+    try expectEqual(.comma, l.token);
+
+    l.nexti();
+    try expectStrings(")", l.name.asStr(l.content));
+    try expectEqual(.cparen, l.token);
+
+    l.nexti();
+    try expectStrings("else", l.name.asStr(l.content));
+    try expectEqual(.else_, l.token);
+
+    l.nexti();
+    try expectStrings("double", l.name.asStr(l.content));
+    try expectEqual(.id, l.token);
+
+    l.nexti();
+    try expectStrings("(", l.name.asStr(l.content));
+    try expectEqual(.oparen, l.token);
+
+    l.nexti();
+    try expectStrings("7", l.name.asStr(l.content));
+    try expectEqual(7, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings(")", l.name.asStr(l.content));
+    try expectEqual(.cparen, l.token);
+
+    l.nexti();
+    try expectStrings(";", l.name.asStr(l.content));
+    try expectEqual(.semicolon, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
 }
