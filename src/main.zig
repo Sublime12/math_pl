@@ -101,7 +101,4 @@ test "print string" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
     try expect(.list, expr.tag());
-
-    print("parse bonjour => : \n", .{});
-    expr.print();
 }

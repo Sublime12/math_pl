@@ -7,6 +7,7 @@ const panic = std.debug.panic;
 const print = std.debug.print;
 
 const expectStrings = std.testing.expectEqualStrings;
+const expectEqual = std.testing.expectEqual;
 
 // A slice indexing where is the id
 // in the content
@@ -419,4 +420,43 @@ test "lex string" {
     try expectStrings("a", lexer.name.asStr(lexer.content));
     lexer.nexti();
     try expectStrings("a\\n", lexer.name.asStr(lexer.content));
+}
+
+test "lex identifiers" {
+    const source_code =
+        \\ variable_name x123 _secret_id
+    ;
+    var lexer = Lexer.init(source_code);
+
+    lexer.nexti();
+    try expectStrings("variable_name", lexer.name.asStr(lexer.content));
+    try expectEqual(.id, lexer.token);
+
+    lexer.nexti();
+    try expectStrings("x123", lexer.name.asStr(lexer.content));
+    try expectEqual(.id, lexer.token);
+
+    lexer.nexti();
+    try expectStrings("_secret_id", lexer.name.asStr(lexer.content));
+    try expectEqual(.id, lexer.token);
+}
+
+test "lex integers" {
+    const source_code =
+        \\ 123 0 4567
+    ;
+    var lexer = Lexer.init(source_code);
+
+    lexer.nexti();
+    try expectEqual(123, lexer.integer_value);
+    try expectEqual(.int, lexer.token);
+
+    lexer.nexti();
+    try expectEqual(0, lexer.integer_value);
+    try expectEqual(.int, lexer.token);
+
+    lexer.nexti();
+    try expectStrings("4567", lexer.name.asStr(lexer.content));
+    try expectEqual(4567, lexer.integer_value);
+    try expectEqual(.int, lexer.token);
 }
