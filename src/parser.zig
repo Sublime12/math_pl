@@ -94,9 +94,9 @@ pub const Parser = struct {
         } else if (l.token == .str) {
             lhs.* = .{ .arith = .{ .str = l.name.asStr(l.content) } };
             l.nexti();
-        } else if (l.tokenType == .Primary) panic("Must be identifier, integer or string", .{});
+        } else if (l.tokenType == .primary) panic("Must be identifier, integer or string", .{});
 
-        while (l.tokenType == .ArithOp or l.tokenType == .BoolOp) {
+        while (l.tokenType == .arith_op or l.tokenType == .bool_op) {
             const op_token = l.token;
             const op_token_type = l.tokenType;
             l.nexti();
@@ -129,7 +129,7 @@ pub const Parser = struct {
                 },
             };
 
-            if (op_token_type == .ArithOp) {
+            if (op_token_type == .arith_op) {
                 const op: ArithExpr = switch (op_token) {
                     .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
                     .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
@@ -139,7 +139,7 @@ pub const Parser = struct {
 
                 lhs = try alloc.create(Expr);
                 lhs.* = .{ .arith = op };
-            } else if (op_token_type == .BoolOp) {
+            } else if (op_token_type == .bool_op) {
                 const op: BoolExpr = switch (op_token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("not catch for {}", .{op_token}),
@@ -183,7 +183,7 @@ pub const Parser = struct {
         const next_l = l.nextl();
 
         switch (next_l.tokenType) {
-            .BoolOp => {
+            .bool_op => {
                 l.nexti();
                 const token = l.token;
                 l.nexti();
@@ -195,7 +195,7 @@ pub const Parser = struct {
                 };
                 return .{ .bool_ = op };
             },
-            .ArithOp => {
+            .arith_op => {
                 l.nexti();
                 const token = l.token;
                 l.nexti();

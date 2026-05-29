@@ -51,7 +51,7 @@ pub const Lexer = struct {
             .name = .empty,
             .integer_value = null,
             .bool_value = null,
-            .tokenType = .None,
+            .tokenType = .none,
         };
     }
 
@@ -81,27 +81,27 @@ pub const Lexer = struct {
         switch (token) {
             .minus, .prod, .plus => |t| {
                 l.token = t;
-                l.tokenType = .ArithOp;
+                l.tokenType = .arith_op;
             },
             .eql => |t| {
                 l.token = t;
-                l.tokenType = .BoolOp;
+                l.tokenType = .bool_op;
             },
             .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, => |t| {
                 l.token = t;
-                l.tokenType = .Keyword;
+                l.tokenType = .keyword;
             },
             .oparen, .cparen => |t| {
                 l.token = t;
-                l.tokenType = .Paren;
+                l.tokenType = .paren;
             },
             .assign, .comma, .semicolon => |t| {
                 l.token = t;
-                l.tokenType = .Other;
+                l.tokenType = .other;
             },
             .id, .int, .bool_, .str => |t| {
                 l.token = t;
-                l.tokenType = .Primary;
+                l.tokenType = .primary;
             },
             else => |t| panic("setToken not implemented for {}", .{t}),
         }
@@ -372,14 +372,14 @@ const TokenKind = enum {
 };
 
 const TokenType = enum {
-    ArithOp,
-    BoolOp,
-    CmpOp,
-    Primary,
-    Paren,
-    Keyword,
-    Other,
-    None,
+    arith_op,
+    bool_op,
+    cmp_op,
+    primary,
+    paren,
+    keyword,
+    other,
+    none,
 };
 
 const Cursor = struct {
