@@ -627,3 +627,53 @@ test "lex empty input and end token" {
     l.nexti();
     try expectEqual(.end, l.token);
 }
+
+test "lex arithmetic operators and punctuation" {
+    const source_code =
+        \\ (1 + 2) * 3 - 4,
+    ;
+    var l = Lexer.init(source_code);
+
+    l.nexti();
+    try expectStrings("(", l.name.asStr(l.content));
+    try expectEqual(.oparen, l.token);
+
+    l.nexti();
+    try expectEqual(1, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("+", l.name.asStr(l.content));
+    try expectEqual(.plus, l.token);
+
+    l.nexti();
+    try expectEqual(2, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings(")", l.name.asStr(l.content));
+    try expectEqual(.cparen, l.token);
+
+    l.nexti();
+    try expectStrings("*", l.name.asStr(l.content));
+    try expectEqual(.prod, l.token);
+
+    l.nexti();
+    try expectEqual(3, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("-", l.name.asStr(l.content));
+    try expectEqual(.minus, l.token);
+
+    l.nexti();
+    try expectEqual(4, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings(",", l.name.asStr(l.content));
+    try expectEqual(.comma, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
+}
