@@ -88,7 +88,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, => |t| {
+            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
