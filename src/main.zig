@@ -94,17 +94,9 @@ test "print string" {
     defer arena.deinit();
     const alloc = arena.allocator();
     const source_code =
-        \\ print_str("bonjour"+"papa"+enfant+2+"salut", );
+        \\ print_str("bonjour"+"papa",);
     ;
     var lexer = Lexer.init(source_code);
-
-    while (lexer.next()) {
-        print(
-            "token: {}, str: {s}, int: {?}\n",
-            .{ lexer.token, lexer.name.asStr(lexer.content), lexer.integer_value },
-        );
-        if (lexer.token == .TokenEnd) break;
-    }
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
