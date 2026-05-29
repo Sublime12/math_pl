@@ -46,7 +46,7 @@ pub const Lexer = struct {
     pub fn init(content: []const u8) Lexer {
         return .{
             .content = content,
-            .token = .TokenNone,
+            .token = .none,
             .cursor = .empty,
             .name = .empty,
             .integer_value = null,
@@ -79,27 +79,27 @@ pub const Lexer = struct {
 
     fn setToken(l: *Lexer, token: TokenKind) void {
         switch (token) {
-            .TokenMinus, .TokenProd, .TokenPlus => |t| {
+            .minus, .prod, .plus => |t| {
                 l.token = t;
                 l.tokenType = .ArithOp;
             },
-            .TokenEql => |t| {
+            .eql => |t| {
                 l.token = t;
                 l.tokenType = .BoolOp;
             },
-            .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn, .TokenBind, => |t| {
+            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, => |t| {
                 l.token = t;
                 l.tokenType = .Keyword;
             },
-            .TokenOParen, .TokenCParen => |t| {
+            .oparen, .cparen => |t| {
                 l.token = t;
                 l.tokenType = .Paren;
             },
-            .TokenAssign, .TokenComma, .TokenSemicolon => |t| {
+            .assign, .comma, .semicolon => |t| {
                 l.token = t;
                 l.tokenType = .Other;
             },
-            .TokenId, .TokenInt, .TokenBool, .TokenStr => |t| {
+            .id, .int, .bool_, .str => |t| {
                 l.token = t;
                 l.tokenType = .Primary;
             },
@@ -125,7 +125,7 @@ pub const Lexer = struct {
 
         const x_opt = l.next_char();
         if (x_opt == null) {
-            l.token = .TokenEnd;
+            l.token = .end;
             return true;
         }
 
@@ -138,10 +138,10 @@ pub const Lexer = struct {
                 if (n_char == '=') {
                     _ = l.next_char();
                     l.name.extend();
-                    l.setToken(.TokenEql);
+                    l.setToken(.eql);
                     return true;
                 }
-                l.setToken(.TokenAssign);
+                l.setToken(.assign);
                 return true;
             },
             '-' => {
@@ -150,40 +150,40 @@ pub const Lexer = struct {
                 if (n_char == '>') {
                     _ = l.next_char();
                     l.name.extend();
-                    l.setToken(.TokenArrow);
+                    l.setToken(.arrow);
                     return true;
                 }
-                l.setToken(.TokenMinus);
+                l.setToken(.minus);
                 return true;
             },
             '(' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenOParen);
+                l.setToken(.oparen);
                 return true;
             },
             ')' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenCParen);
+                l.setToken(.cparen);
                 return true;
             },
             '*' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenProd);
+                l.setToken(.prod);
                 return true;
             },
             '+' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenPlus);
+                l.setToken(.plus);
                 return true;
             },
             ',' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenComma);
+                l.setToken(.comma);
                 return true;
             },
             ';' => {
                 l.clearAppendSymbol(x);
-                l.setToken(.TokenSemicolon);
+                l.setToken(.semicolon);
                 return true;
             },
             '"' => {
@@ -193,7 +193,7 @@ pub const Lexer = struct {
                 // l.name.extend();
 
                 l.lexString(nb);
-                l.setToken(.TokenStr);
+                l.setToken(.str);
                 return true;
                 // panic("unimplemented str token found", .{});
             },
@@ -209,32 +209,32 @@ pub const Lexer = struct {
             }
 
             if (eql("let", l.name.asStr(l.content))) {
-                l.setToken(.TokenLet);
+                l.setToken(.let);
                 return true;
             } else if (eql("if", l.name.asStr(l.content))) {
-                l.setToken(.TokenIf);
+                l.setToken(.if_);
                 return true;
             } else if (eql("bind", l.name.asStr(l.content))) {
-                l.setToken(.TokenBind);
+                l.setToken(.bind);
                 return true;
             } else if (eql("self_fn", l.name.asStr(l.content))) {
-                l.setToken(.TokenSelfFn);
+                l.setToken(.self_fn);
                 return true;
             } else if (eql("fn", l.name.asStr(l.content))) {
-                l.setToken(.TokenFn);
+                l.setToken(.fn_);
                 return true;
             } else if (eql("then", l.name.asStr(l.content))) {
-                l.setToken(.TokenThen);
+                l.setToken(.then);
                 return true;
             } else if (eql("else", l.name.asStr(l.content))) {
-                l.setToken(.TokenElse);
+                l.setToken(.else_);
                 return true;
             } else if (eql("true", l.name.asStr(l.content))) {
-                l.setToken(.TokenBool);
+                l.setToken(.bool_);
                 l.bool_value = true;
                 return true;
             } else if (eql("false", l.name.asStr(l.content))) {
-                l.setToken(.TokenBool);
+                l.setToken(.bool_);
                 l.bool_value = false;
                 return true;
             } else if (std.ascii.isDigit(l.name.asStr(l.content)[0])) {
@@ -242,10 +242,10 @@ pub const Lexer = struct {
                     panic("Expected number, found: {s}", .{l.name.asStr(l.content)});
                 };
                 l.integer_value = number;
-                l.setToken(.TokenInt);
+                l.setToken(.int);
                 return true;
             } else {
-                l.setToken(.TokenId);
+                l.setToken(.id);
                 return true;
             }
         }
@@ -336,39 +336,39 @@ pub const Lexer = struct {
 
 const TokenKind = enum {
     // Cmp ops
-    TokenEql,
-    TokenAssign,
+    eql,
+    assign,
 
     // Arith ops
-    TokenMinus,
-    TokenPlus,
-    TokenProd,
+    minus,
+    plus,
+    prod,
 
     // parentheses
-    TokenOParen,
-    TokenCParen,
+    oparen,
+    cparen,
 
     // keywords
-    TokenArrow,
-    TokenFn,
-    TokenElse,
-    TokenLet,
-    TokenIf,
-    TokenSelfFn,
-    TokenThen,
-    TokenBind,
+    arrow,
+    fn_,
+    else_,
+    let,
+    if_,
+    self_fn,
+    then,
+    bind,
 
     // primary
-    TokenInt,
-    TokenBool,
-    TokenId,
-    TokenStr,
+    int,
+    bool_,
+    id,
+    str,
 
     // others
-    TokenComma,
-    TokenSemicolon,
-    TokenNone,
-    TokenEnd,
+    comma,
+    semicolon,
+    none,
+    end,
 };
 
 const TokenType = enum {

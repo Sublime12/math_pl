@@ -32,9 +32,9 @@ pub const Parser = struct {
 
         var program: std.ArrayList(Expr) = .empty;
         var i: i32 = 0;
-        while (self.lexer.token != .TokenEnd) {
+        while (self.lexer.token != .end) {
             const expr = try parseExpr(self.lexer, self.alloc);
-            self.lexer.expect(.TokenSemicolon);
+            self.lexer.expect(.semicolon);
             self.lexer.nexti();
             try program.append(self.alloc, expr);
             i += 1;
@@ -43,19 +43,19 @@ pub const Parser = struct {
     }
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
-        l.expect(.TokenId);
+        l.expect(.id);
         const id = l.name.asStr(l.content);
         l.nexti();
-        l.expect(.TokenAssign);
+        l.expect(.assign);
         l.nexti();
-        l.expect(.TokenFn);
+        l.expect(.fn_);
         l.nexti();
         var args = std.ArrayList([]const u8).empty;
-        while (l.token == .TokenId) {
+        while (l.token == .id) {
             try args.append(alloc, l.name.asStr(l.content));
             l.nexti();
         }
-        l.expect(.TokenArrow);
+        l.expect(.arrow);
         l.nexti();
 
         const body = try alloc.create(Expr);
@@ -76,9 +76,9 @@ pub const Parser = struct {
         const name = l.name.asStr(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
-        if (l.token == .TokenId) {
+        if (l.token == .id) {
             lhs.* = switch (next_l.token) {
-                .TokenOParen => blk: {
+                .oparen => blk: {
                     l.nexti();
                     const expr = try parseFnCall(l, alloc, name);
                     break :blk expr;
@@ -88,10 +88,10 @@ pub const Parser = struct {
                     break :blk .{ .var_ = name };
                 },
             };
-        } else if (l.token == .TokenInt) {
+        } else if (l.token == .int) {
             lhs.* = .{ .arith = .{ .constant = l.integer_value.? } };
             l.nexti();
-        } else if (l.token == .TokenStr) {
+        } else if (l.token == .str) {
             lhs.* = .{ .arith = .{ .str = l.name.asStr(l.content) } };
             l.nexti();
         } else if (l.tokenType == .Primary) panic("Must be identifier, integer or string", .{});
@@ -107,7 +107,7 @@ pub const Parser = struct {
 
             const current_name = l.name.asStr(l.content);
             rhs.* = switch (l.token) {
-                .TokenId => if (next_l.token == .TokenOParen) blk: {
+                .id => if (next_l.token == .oparen) blk: {
                     l.nexti();
                     const expr = try parseFnCall(l, alloc, current_name);
                     break :blk expr;
@@ -115,11 +115,11 @@ pub const Parser = struct {
                     l.nexti();
                     break :blk .{ .var_ = current_name };
                 },
-                .TokenInt => blk: {
+                .int => blk: {
                     l.nexti();
                     break :blk .{ .arith = .{ .constant = l.integer_value.? } };
                 },
-                .TokenStr => blk: {
+                .str => blk: {
                     l.nexti();
                     break :blk .{ .arith = .{ .str = current_name } };
                 },
@@ -131,9 +131,9 @@ pub const Parser = struct {
 
             if (op_token_type == .ArithOp) {
                 const op: ArithExpr = switch (op_token) {
-                    .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                    .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
-                    .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
+                    .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                    .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
+                    .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
                     else => unreachable,
                 };
 
@@ -141,7 +141,7 @@ pub const Parser = struct {
                 lhs.* = .{ .arith = op };
             } else if (op_token_type == .BoolOp) {
                 const op: BoolExpr = switch (op_token) {
-                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
+                    .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("not catch for {}", .{op_token}),
                 };
 
@@ -154,10 +154,10 @@ pub const Parser = struct {
     }
 
     fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
-        l.expect(.TokenOParen);
+        l.expect(.oparen);
         l.nexti();
         const args = try parseArgs(l, alloc);
-        l.expect(.TokenCParen);
+        l.expect(.cparen);
         l.nexti();
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
         return lhs;
@@ -165,17 +165,17 @@ pub const Parser = struct {
 
     pub fn parseArgs(l: *Lexer, alloc: Allocator) !ArgsExpr {
         var args: std.ArrayList(Expr) = .empty;
-        while (l.token != .TokenCParen) {
+        while (l.token != .cparen) {
             const arg = try parseExpr(l, alloc);
             try args.append(alloc, arg);
-            l.expect(.TokenComma);
+            l.expect(.comma);
             l.nexti();
         }
         return args;
     }
 
     fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
-        l.expect(.TokenOParen);
+        l.expect(.oparen);
         l.nexti();
 
         const lhs = try alloc.create(Expr);
@@ -190,7 +190,7 @@ pub const Parser = struct {
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: BoolExpr = switch (token) {
-                    .TokenEql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
+                    .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
                 return .{ .bool_ = op };
@@ -202,9 +202,9 @@ pub const Parser = struct {
                 const rhs = try alloc.create(Expr);
                 rhs.* = try parseExpr(l, alloc);
                 const op: ArithExpr = switch (token) {
-                    .TokenProd => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                    .TokenMinus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
-                    .TokenPlus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
+                    .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                    .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
+                    .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
                 return .{ .arith = op };
@@ -217,31 +217,31 @@ pub const Parser = struct {
 
     fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
-            .TokenLet => {
+            .let => {
                 l.nexti();
                 return parseFnDef(l, alloc);
             },
-            .TokenIf => {
+            .if_ => {
                 l.nexti();
                 return parseIf(l, alloc);
             },
-            .TokenId, .TokenInt, .TokenStr => {
+            .id, .int, .str => {
                 return parseBeginWithIdOrInt(l, alloc);
             },
-            .TokenSelfFn => {
+            .self_fn => {
                 const name = l.name.asStr(l.content);
                 l.nexti();
-                l.expect(.TokenOParen);
+                l.expect(.oparen);
                 l.nexti();
                 const args = try parseArgs(l, alloc);
-                l.expect(.TokenCParen);
+                l.expect(.cparen);
                 l.nexti();
                 return .{ .fn_call = .{ .name = name, .args = args } };
             },
             // an open paren (not in the context of a function)
-            .TokenOParen => {
+            .oparen => {
                 const expr = parseBeginWithOParen(l, alloc);
-                l.expect(.TokenCParen);
+                l.expect(.cparen);
                 l.nexti();
                 return expr;
             },
@@ -257,11 +257,11 @@ pub const Parser = struct {
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
         const eval = try alloc.create(Expr);
         eval.* = try parseExpr(l, alloc);
-        l.expect(.TokenThen);
+        l.expect(.then);
         l.nexti();
         const then = try alloc.create(Expr);
         then.* = try parseExpr(l, alloc);
-        l.expect(.TokenElse);
+        l.expect(.else_);
         l.nexti();
         const else_ = try alloc.create(Expr);
         else_.* = try parseExpr(l, alloc);
@@ -276,10 +276,10 @@ pub const Parser = struct {
     }
 
     fn parseBool(l: *Lexer, alloc: Allocator) !Expr {
-        if (l.token == .TokenId) {
+        if (l.token == .id) {
             const lhs = try alloc.create(Expr);
             lhs.* = try parseExpr(l, alloc);
-            l.expect(.TokenEql);
+            l.expect(.eql);
             l.nexti();
             const rhs = try alloc.create(Expr);
             rhs.* = try parseExpr(l, alloc);
