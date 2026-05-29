@@ -9,10 +9,12 @@ const ArithExpr = expression_pkg.ArithExpr;
 const BoolExpr = expression_pkg.BoolExpr;
 const ArgsExpr = expression_pkg.ArgsExpr;
 const Allocator = std.mem.Allocator;
+const ArenaAllocator = std.heap.ArenaAllocator;
 
 const Lexer = lexer_pkg.Lexer;
 
 const panic = std.debug.panic;
+const expect = std.testing.expectEqual;
 
 pub const Parser = struct {
     const Self = @This();
@@ -291,3 +293,46 @@ pub const Parser = struct {
         panic("Not yet implemented for functions", .{});
     }
 };
+
+fn arena_alloc() ArenaAllocator {
+    const backed_alloc = std.testing.allocator;
+    return std.heap.ArenaAllocator.init(backed_alloc);
+}
+
+test "simple fn expression" {
+    // For now use an arena alloc because we don't free memory
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const source_code =
+        \\ print(97, );
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+    try expect(.list, expr.tag());
+    const fn_call = expr.list.items[0];
+    try expect(.fn_call, fn_call.tag());
+
+    const args = fn_call.fn_call.args;
+    try expect(1, args.items.len);
+    const arg = args.items[0];
+    try expect(.arith, arg.tag());
+    try expect(.constant, arg.arith.tag());
+    try expect(97, arg.arith.constant);
+}
+
+test "print string" {
+    // For now use an arena alloc because we don't free memory
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+    const source_code =
+        \\ print_str("bonjour"+"papa",);
+    ;
+    var lexer = Lexer.init(source_code);
+
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+    try expect(.list, expr.tag());
+}
