@@ -89,15 +89,29 @@ test "simple fn expression" {
 }
 
 test "parse string" {
-    var arena = arena_alloc();
-    defer arena.deinit();
-    const alloc = arena.allocator();
     const source_code =
-        \\\ "" Hello "World" ""
+        \\ """"""bon "abc" x"""""" if 
+        \\ "amis "
+
     ;
     var lexer = Lexer.init(source_code);
-    var parser = Parser.init(&lexer, alloc);
-    const expr = try parser.parse();
-    expr.print();
-    std.debug.print("\n", .{});
+
+    var i: usize = 0;
+    while (lexer.next()) {
+        if (lexer.token == .TokenEnd) break;
+        print("token = {} |{s}|, cursor{}\n", .{
+            lexer.token,
+            lexer.name.asStr(lexer.content),
+            lexer.cursor,
+        });
+        i += 1;
+    }
+
+    // var arena = arena_alloc();
+    // defer arena.deinit();
+    // const alloc = arena.allocator();
+    // var parser = Parser.init(&lexer, alloc);
+    // const expr = try parser.parse();
+    // expr.print();
+    // std.debug.print("\n", .{});
 }

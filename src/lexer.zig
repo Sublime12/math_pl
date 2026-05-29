@@ -4,6 +4,7 @@ const expression_pkg = @import("expression.zig");
 
 const eql = std.ascii.eqlIgnoreCase;
 const panic = std.debug.panic;
+const print = std.debug.print;
 
 // A slice indexing where is the id
 // in the content
@@ -96,7 +97,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .Other;
             },
-            .TokenId, .TokenInt, .TokenBool => |t| {
+            .TokenId, .TokenInt, .TokenBool, .TokenStr => |t| {
                 l.token = t;
                 l.tokenType = .Primary;
             },
@@ -127,6 +128,7 @@ pub const Lexer = struct {
         }
 
         const x = x_opt.?;
+
         switch (x) {
             '=' => {
                 l.clearAppendSymbol(x);
@@ -182,6 +184,17 @@ pub const Lexer = struct {
                 l.setToken(.TokenSemicolon);
                 return true;
             },
+            '"' => {
+                const nb = l.countDComma();
+                // print("comma count: {}\n", .{nb});
+                l.name.clear(l.cursor.pos - 1);
+                // l.name.extend();
+
+                l.lexString(nb);
+                l.setToken(.TokenStr);
+                return true;
+                // panic("unimplemented str token found", .{});
+            },
             else => {},
         }
 
@@ -236,6 +249,43 @@ pub const Lexer = struct {
 
     fn isSymbol(x: u8) bool {
         return std.ascii.isAlphanumeric(x) or x == '_';
+    }
+
+    fn lexString(l: *Lexer, nb_delimiter: usize) void {
+        const MAX_COMMA_STR = 15;
+        loop: while (true) {
+            const c = l.next_char() orelse break;
+            if (c == '"') {
+                var count: usize = 1;
+                for (0..MAX_COMMA_STR) |_| {
+                    const c2 = l.next_char();
+                    if (c2 == '"') {
+                        count += 1;
+                    } else {
+                        l.name.extend();
+                        break;
+                    }
+                }
+                // print("pos here: {}, count: {}, delimiter: {}\n", .{ l.cursor.pos, count, nb_delimiter });
+                if (count != nb_delimiter) {
+                    // This is not the end of the string
+                    // so we account the "" as in the string
+                    // print("name: {s}\n", .{l.name.asStr(l.content)});
+                    for (0..count) |_| {
+                        l.name.extend();
+                    }
+                } else break :loop;
+            } else l.name.extend();
+        }
+    }
+
+    fn countDComma(l: *Lexer) usize {
+        var count: usize = 1;
+        while (l.next_char()) |c| {
+            if (c != '"') break;
+            count += 1;
+        }
+        return count;
     }
 
     pub fn trim_left(l: *Lexer) void {
@@ -301,6 +351,7 @@ const TokenKind = enum {
     TokenInt,
     TokenBool,
     TokenId,
+    TokenStr,
 
     // others
     TokenComma,
