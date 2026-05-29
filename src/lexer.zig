@@ -87,7 +87,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .BoolOp;
             },
-            .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn => |t| {
+            .TokenElse, .TokenIf, .TokenFn, .TokenThen, .TokenArrow, .TokenLet, .TokenSelfFn, .TokenBind, => |t| {
                 l.token = t;
                 l.tokenType = .Keyword;
             },
@@ -213,6 +213,9 @@ pub const Lexer = struct {
                 return true;
             } else if (eql("if", l.name.asStr(l.content))) {
                 l.setToken(.TokenIf);
+                return true;
+            } else if (eql("bind", l.name.asStr(l.content))) {
+                l.setToken(.TokenBind);
                 return true;
             } else if (eql("self_fn", l.name.asStr(l.content))) {
                 l.setToken(.TokenSelfFn);
@@ -353,6 +356,7 @@ const TokenKind = enum {
     TokenIf,
     TokenSelfFn,
     TokenThen,
+    TokenBind,
 
     // primary
     TokenInt,
