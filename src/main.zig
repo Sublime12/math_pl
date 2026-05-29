@@ -99,7 +99,10 @@ test "print string" {
     var lexer = Lexer.init(source_code);
 
     while (lexer.next()) {
-        print("token: {}, str: {s}, int: {?}\n", .{lexer.token, lexer.name.asStr(lexer.content), lexer.integer_value},);
+        print(
+            "token: {}, str: {s}, int: {?}\n",
+            .{ lexer.token, lexer.name.asStr(lexer.content), lexer.integer_value },
+        );
         if (lexer.token == .TokenEnd) break;
     }
 

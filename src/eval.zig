@@ -156,7 +156,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars) Expr {
                 else => unreachable,
             };
         },
-        .str => |op| panic("eval_arith unimplemented for str: \"{s}\"", .{ op }),
+        .str => |op| panic("eval_arith unimplemented for str: \"{s}\"", .{op}),
     }
 }
 
