@@ -322,7 +322,7 @@ test "simple fn expression" {
     try expect(97, arg.arith.constant);
 }
 
-test "print string" {
+test "parse print_str function" {
     // For now use an arena alloc because we don't free memory
     var arena = arena_alloc();
     defer arena.deinit();
@@ -335,4 +335,26 @@ test "print string" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
     try expect(.list, expr.tag());
+
+    try expect(1, expr.list.items.len);
+    const fn_call = expr.list.items[0];
+    try expect(.fn_call, fn_call.tag());
+    try expect(true, std.mem.eql(u8, "print_str", fn_call.fn_call.name));
+
+    const args = fn_call.fn_call.args;
+    try expect(1, args.items.len);
+    const arg = args.items[0];
+    try expect(.arith, arg.tag());
+    try expect(.plus, arg.arith.tag());
+
+    const lhs = arg.arith.plus.lhs;
+    const rhs = arg.arith.plus.rhs;
+
+    try expect(.arith, lhs.tag());
+    try expect(.str, lhs.arith.tag());
+    try expect(true, std.mem.eql(u8, "bonjour", lhs.*.arith.str));
+
+    try expect(.arith, rhs.tag());
+    try expect(.str, rhs.arith.tag());
+    try expect(true, std.mem.eql(u8, "papa", rhs.*.arith.str));
 }
