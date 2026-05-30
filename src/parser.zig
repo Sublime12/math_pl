@@ -385,3 +385,44 @@ test "parse function definition" {
     try expect(.arith, body.tag());
     try expect(.plus, body.arith.tag());
 }
+
+test "parse if expression" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ if n == 1 then "yes" else "no";
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+
+    const if_expr = expr.list.items[0];
+    try expect(.if_, if_expr.tag());
+
+    const eval_node = if_expr.if_.eval.*;
+    try expect(.bool_, eval_node.tag());
+    try expect(.eql, eval_node.bool_.tag());
+
+    const lhs = eval_node.bool_.eql.lhs;
+    try expect(.var_, lhs.tag());
+    try expect(true, std.mem.eql(u8, "n", lhs.var_));
+
+    const rhs = eval_node.bool_.eql.rhs;
+    try expect(.arith, rhs.tag());
+    try expect(.constant, rhs.arith.tag());
+    try expect(1, rhs.arith.constant);
+
+    const then_node = if_expr.if_.then.*;
+    try expect(.arith, then_node.tag());
+    try expect(.str, then_node.arith.tag());
+    try expect(true, std.mem.eql(u8, "yes", then_node.arith.str));
+
+    const else_node = if_expr.if_.else_.*;
+    try expect(.arith, else_node.tag());
+    try expect(.str, else_node.arith.tag());
+    try expect(true, std.mem.eql(u8, "no", else_node.arith.str));
+}
