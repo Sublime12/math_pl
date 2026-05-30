@@ -358,3 +358,30 @@ test "parse print_str function" {
     try expect(.str, rhs.arith.tag());
     try expect(true, std.mem.eql(u8, "papa", rhs.*.arith.str));
 }
+
+test "parse function definition" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ let add = fn x y -> x + y;
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const fn_def = expr.list.items[0];
+    try expect(.fn_def, fn_def.tag());
+    try expect(true, std.mem.eql(u8, "add", fn_def.fn_def.name));
+    try expect(2, fn_def.fn_def.args.items.len);
+    try expect(true, std.mem.eql(u8, "x", fn_def.fn_def.args.items[0]));
+    try expect(true, std.mem.eql(u8, "y", fn_def.fn_def.args.items[1]));
+
+    const body = fn_def.fn_def.body.fn_std.body.*;
+    try expect(.arith, body.tag());
+    try expect(.plus, body.arith.tag());
+}
