@@ -15,6 +15,7 @@ const Lexer = lexer_pkg.Lexer;
 
 const panic = std.debug.panic;
 const expect = std.testing.expectEqual;
+const expectStrings = std.testing.expectEqualStrings;
 
 pub const Parser = struct {
     const Self = @This();
@@ -339,7 +340,7 @@ test "parse print_str function" {
     try expect(1, expr.list.items.len);
     const fn_call = expr.list.items[0];
     try expect(.fn_call, fn_call.tag());
-    try expect(true, std.mem.eql(u8, "print_str", fn_call.fn_call.name));
+    try expectStrings("print_str", fn_call.fn_call.name);
 
     const args = fn_call.fn_call.args;
     try expect(1, args.items.len);
@@ -352,11 +353,11 @@ test "parse print_str function" {
 
     try expect(.arith, lhs.tag());
     try expect(.str, lhs.arith.tag());
-    try expect(true, std.mem.eql(u8, "bonjour", lhs.*.arith.str));
+    try expectStrings("bonjour", lhs.*.arith.str);
 
     try expect(.arith, rhs.tag());
     try expect(.str, rhs.arith.tag());
-    try expect(true, std.mem.eql(u8, "papa", rhs.*.arith.str));
+    try expectStrings("papa", rhs.*.arith.str);
 }
 
 test "parse function definition" {
@@ -376,10 +377,10 @@ test "parse function definition" {
 
     const fn_def = expr.list.items[0];
     try expect(.fn_def, fn_def.tag());
-    try expect(true, std.mem.eql(u8, "add", fn_def.fn_def.name));
+    try expectStrings("add", fn_def.fn_def.name);
     try expect(2, fn_def.fn_def.args.items.len);
-    try expect(true, std.mem.eql(u8, "x", fn_def.fn_def.args.items[0]));
-    try expect(true, std.mem.eql(u8, "y", fn_def.fn_def.args.items[1]));
+    try expectStrings("x", fn_def.fn_def.args.items[0]);
+    try expectStrings("y", fn_def.fn_def.args.items[1]);
 
     const body = fn_def.fn_def.body.fn_std.body.*;
     try expect(.arith, body.tag());
@@ -409,7 +410,7 @@ test "parse if expression" {
 
     const lhs = eval_node.bool_.eql.lhs;
     try expect(.var_, lhs.tag());
-    try expect(true, std.mem.eql(u8, "n", lhs.var_));
+    try expectStrings("n", lhs.var_);
 
     const rhs = eval_node.bool_.eql.rhs;
     try expect(.arith, rhs.tag());
@@ -419,10 +420,10 @@ test "parse if expression" {
     const then_node = if_expr.if_.then.*;
     try expect(.arith, then_node.tag());
     try expect(.str, then_node.arith.tag());
-    try expect(true, std.mem.eql(u8, "yes", then_node.arith.str));
+    try expectStrings("yes", then_node.arith.str);
 
     const else_node = if_expr.if_.else_.*;
     try expect(.arith, else_node.tag());
     try expect(.str, else_node.arith.tag());
-    try expect(true, std.mem.eql(u8, "no", else_node.arith.str));
+    try expectStrings("no", else_node.arith.str);
 }
