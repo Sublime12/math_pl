@@ -1,2 +1,4 @@
+let double = fn x -> x * 2;
 bind n = 15 + 3 in
-print_int(n);
+bind n_double = double(n, ) in
+print_int(n_double,);
