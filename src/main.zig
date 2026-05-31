@@ -58,8 +58,7 @@ pub fn main() !void {
 
     print("constructed expression: \n", .{});
     expr.print();
-
-    print("\nend expr \n\n", .{});
+    print("\nend expr\n", .{});
 
     _ = eval(expr, ctx, local_vars);
     print("\n", .{});

@@ -12,6 +12,7 @@ const ArithExpr = expression_pkg.ArithExpr;
 const IfExpr = expression_pkg.IfExpr;
 const FnCallExpr = expression_pkg.FnCallExpr;
 const FnExpr = expression_pkg.FnExpr;
+const BindExpr = expression_pkg.BindExpr;
 
 const assert = std.debug.assert;
 const panic = std.debug.panic;
@@ -82,9 +83,21 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             }
             return list_evaluated.getLast();
         },
-        .bind => panic("eval for bind expr not yet implemented", .{}),
+        .bind => |bind| return eval_bind(bind, ctx, local_vars),
         .void_ => return expr,
     }
+}
+
+fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
+    const id = bind.id;
+    const ebody = eval(bind.body.*, ctx, local_vars);
+    const body: Var = if (ebody.isInt()) .{ .int = ebody.arith.constant }
+        else if (ebody.isBool()) .{ .bool_ = ebody.bool_.constant }
+        else panic("body must be evaluated of type int or bool", .{});
+
+    var bind_vars = local_vars.clone() catch unreachable;
+    bind_vars.putNoClobber(id, body) catch unreachable;
+    return eval(bind.closure.*, ctx, bind_vars);
 }
 
 fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {

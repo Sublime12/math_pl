@@ -109,6 +109,16 @@ pub const Expr = union(ExprTag) {
     list: std.ArrayList(Expr),
     void_: i32,
 
+    pub fn isInt(self: Self) bool {
+        if (self.tag() != .arith) return false;
+        return self.arith.tag() == .constant;
+    }
+
+    pub fn isBool(self: Self) bool {
+        if (self.tag() != .bool_) return false;
+        return self.bool_.tag() == .constant;
+    }
+
     pub fn print(self: Self) void {
         switch (self) {
             .if_ => |expr| expr.print(),
