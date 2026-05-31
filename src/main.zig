@@ -56,6 +56,11 @@ pub fn main() !void {
 
     const ctx = try buildContext(expr, alloc);
 
+    print("constructed expression: \n", .{});
+    expr.print();
+
+    print("\nend expr \n\n", .{});
+
     _ = eval(expr, ctx, local_vars);
     print("\n", .{});
 }

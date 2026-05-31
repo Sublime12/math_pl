@@ -248,6 +248,9 @@ pub const Parser = struct {
                 l.nexti();
                 return expr;
             },
+            .bind => {
+                return parseBind(l, alloc);
+            },
             else => {},
         }
 
@@ -255,6 +258,24 @@ pub const Parser = struct {
             "Panic with token {}, value: {s}",
             .{ l.token, l.name.asStr(l.content) },
         );
+    }
+
+    fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
+        l.nexti();
+        l.expect(.id);
+        const id = l.name.asStr(l.content);
+        l.nexti();
+
+        l.expect(.assign);
+        l.nexti();
+        const body = try alloc.create(Expr);
+        body.* = try parseExpr(l, alloc);
+        l.expect(.in);
+        l.nexti();
+
+        const closure = try alloc.create(Expr);
+        closure.* = try parseExpr(l, alloc);
+        return .{ .bind = .{ .id = id, .body = body, .closure = closure, } };
     }
 
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
