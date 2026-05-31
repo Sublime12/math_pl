@@ -28,16 +28,26 @@ pub const FnExpr = struct {
         }
         std.debug.print(" -> ", .{});
         switch (self.body) {
-            .fn_binding => |_| std.debug.print("binding:  ...", .{}),
+            .fn_binding => std.debug.print("binding:  ...", .{}),
             .fn_std => |fn_std| fn_std.print(),
         }
     }
 };
 
 pub const BindExpr = struct {
+    const Self = @This();
+
     id: []const u8,
     body: *Expr,
     closure: *Expr,
+
+    pub fn print(self: Self) void {
+        std.debug.print("bind {s} = ", .{self.id});
+        self.body.print();
+        std.debug.print(" in (", .{});
+        self.closure.print();
+        std.debug.print(")", .{});
+    }
 };
 
 pub const FnBody = union(FnExprTag) {
@@ -114,6 +124,7 @@ pub const Expr = union(ExprTag) {
                 }
             },
             .void_ => std.debug.print("void", .{}),
+            .bind => |expr| expr.print(),
         }
     }
 
