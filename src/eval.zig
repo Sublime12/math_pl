@@ -82,6 +82,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             }
             return list_evaluated.getLast();
         },
+        .bind => panic("eval for bind expr not yet implemented", .{}),
         .void_ => return expr,
     }
 }
