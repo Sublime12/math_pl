@@ -105,16 +105,10 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
 }
 
 fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
-    // if (std.mem.eql(u8, expr.name, "print")) {
-    //     const arg = eval(expr.args.items[0], ctx, local_vars);
-    //     print(arg);
-    //     return .{ .bool_ = .{ .constant = false } };
-    // }
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
     var fn_params: Vars = .init(ctx.alloc);
-    // assert(expr.args.items.len == fn_def.fn_std.args.items.len);
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
