@@ -88,7 +88,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind => |t| {
+            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -96,7 +96,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .paren;
             },
-            .assign, .comma, .semicolon => |t| {
+            .assign, .comma, .semicolon, .none, .end => |t| {
                 l.token = t;
                 l.tokenType = .other;
             },
@@ -104,7 +104,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .primary;
             },
-            else => |t| panic("setToken not implemented for {}", .{t}),
+            // else => |t| panic("setToken not implemented for {}", .{t}),
         }
     }
 
@@ -217,6 +217,9 @@ pub const Lexer = struct {
                 return true;
             } else if (eql("bind", l.name.asStr(l.content))) {
                 l.setToken(.bind);
+                return true;
+            } else if (eql("in", l.name.asStr(l.content))) {
+                l.setToken(.in);
                 return true;
             } else if (eql("self_fn", l.name.asStr(l.content))) {
                 l.setToken(.self_fn);
@@ -358,6 +361,7 @@ const TokenKind = enum {
     self_fn,
     then,
     bind,
+    in,
 
     // primary
     int,
@@ -680,7 +684,7 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else
+        \\ let fn if then else in bind
     ;
     var l = Lexer.init(source_code);
 
@@ -703,6 +707,14 @@ test "lex core keywords" {
     l.nexti();
     try expectStrings("else", l.name.asStr(l.content));
     try expectEqual(.else_, l.token);
+
+    l.nexti();
+    try expectStrings("in", l.name.asStr(l.content));
+    try expectEqual(.in, l.token);
+
+    l.nexti();
+    try expectStrings("bind", l.name.asStr(l.content));
+    try expectEqual(.bind, l.token);
 
     l.nexti();
     try expectEqual(.end, l.token);
