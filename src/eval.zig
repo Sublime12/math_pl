@@ -91,9 +91,13 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
 fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
     const id = bind.id;
     const ebody = eval(bind.body.*, ctx, local_vars);
-    const body: Var = if (ebody.isInt()) .{ .int = ebody.arith.constant }
-        else if (ebody.isBool()) .{ .bool_ = ebody.bool_.constant }
-        else panic("body must be evaluated of type int or bool", .{});
+    const body: Var =
+        if (ebody.isInt())
+            .{ .int = ebody.arith.constant }
+        else if (ebody.isBool())
+            .{ .bool_ = ebody.bool_.constant }
+        else
+            panic("body must be evaluated of type int or bool", .{});
 
     var bind_vars = local_vars.clone() catch unreachable;
     bind_vars.putNoClobber(id, body) catch unreachable;
