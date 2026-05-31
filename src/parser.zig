@@ -452,3 +452,52 @@ test "parse if expression" {
     try expect(.str, else_node.arith.tag());
     try expectStrings("no", else_node.arith.str);
 }
+
+test "parse nested bind expressions" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ let double = fn x -> x * 2;
+        \\ bind n = 15 + 3 in
+        \\ bind n_double = double(n, ) in
+        \\ print_int(n_double,);
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(2, expr.list.items.len);
+
+    const fn_def = expr.list.items[0];
+    try expect(.fn_def, fn_def.tag());
+    try expectStrings("double", fn_def.fn_def.name);
+
+    const bind_n = expr.list.items[1];
+    try expect(.bind, bind_n.tag());
+    try expectStrings("n", bind_n.bind.id);
+
+    const bind_n_body = bind_n.bind.body.*;
+    try expect(.arith, bind_n_body.tag());
+    try expect(.plus, bind_n_body.arith.tag());
+
+    const bind_n_double = bind_n.bind.closure.*;
+    try expect(.bind, bind_n_double.tag());
+    try expectStrings("n_double", bind_n_double.bind.id);
+
+    const bind_n_double_body = bind_n_double.bind.body.*;
+    try expect(.fn_call, bind_n_double_body.tag());
+    try expectStrings("double", bind_n_double_body.fn_call.name);
+    try expect(1, bind_n_double_body.fn_call.args.items.len);
+
+    const print_call = bind_n_double.bind.closure.*;
+    try expect(.fn_call, print_call.tag());
+    try expectStrings("print_int", print_call.fn_call.name);
+    try expect(1, print_call.fn_call.args.items.len);
+
+    const print_arg = print_call.fn_call.args.items[0];
+    try expect(.var_, print_arg.tag());
+    try expectStrings("n_double", print_arg.var_);
+}
