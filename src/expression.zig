@@ -34,6 +34,12 @@ pub const FnExpr = struct {
     }
 };
 
+pub const BindExpr = struct {
+    id: []const u8,
+    body: *Expr,
+    closure: *Expr,
+};
+
 pub const FnBody = union(FnExprTag) {
     const Self = @This();
     fn_std: FnStdExpr,
@@ -75,6 +81,7 @@ pub const ExprTag = enum {
     fn_call,
     fn_def,
     var_,
+    bind,
     list,
     void_,
 };
@@ -88,6 +95,7 @@ pub const Expr = union(ExprTag) {
     fn_call: FnCallExpr,
     fn_def: FnExpr,
     var_: []const u8,
+    bind: BindExpr,
     list: std.ArrayList(Expr),
     void_: i32,
 
