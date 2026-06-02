@@ -6,6 +6,8 @@ const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
 
+const panic = std.debug.panic;
+
 pub const FnExpr = struct {
     const Self = @This();
 
@@ -93,6 +95,8 @@ pub const ExprTag = enum {
     var_,
     bind,
     list,
+    struct_,
+    struct_instance,
     void_,
 };
 
@@ -107,6 +111,8 @@ pub const Expr = union(ExprTag) {
     var_: []const u8,
     bind: BindExpr,
     list: std.ArrayList(Expr),
+    struct_: StructExpr,
+    struct_instance: StructInstanceExpr,
     void_: i32,
 
     pub fn isInt(self: Self) bool {
@@ -127,6 +133,7 @@ pub const Expr = union(ExprTag) {
             .fn_call => |expr| expr.print(),
             .fn_def => |expr| expr.print(),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
+            .struct_instance => |expr| expr.print(),
             .list => |expr| {
                 for (expr.items) |el| {
                     el.print();
@@ -134,12 +141,37 @@ pub const Expr = union(ExprTag) {
                 }
             },
             .void_ => std.debug.print("void", .{}),
+            .struct_ => panic("print for struct_ not yet implemented", .{}),
             .bind => |expr| expr.print(),
         }
     }
 
     pub fn tag(self: Self) ExprTag {
         return @as(ExprTag, self);
+    }
+};
+
+const StructExpr = struct {
+    name: []const u8,
+    fields: std.ArrayList([]const u8),
+};
+
+const Values = std.StringHashMap(Expr);
+
+const StructInstanceExpr = struct {
+    const Self = @This();
+    name: []const u8,
+    values: std.StringHashMapUnmanaged(Expr),
+
+    pub fn print(self: Self) void {
+        std.debug.print("@{s}{{ ", .{self.name});
+        var it = self.values.iterator();
+        while (it.next()) |value| {
+            std.debug.print(".{s} = ", .{value.key_ptr.*});
+            value.value_ptr.print();
+            std.debug.print(", ", .{});
+        }
+        std.debug.print("}}", .{});
     }
 };
 

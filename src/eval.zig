@@ -83,6 +83,8 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             }
             return list_evaluated.getLast();
         },
+        .struct_ => panic("eval not yet implemented for struct_", .{}),
+        .struct_instance => panic("eval not yet implemented for struct_instance", .{}),
         .bind => |bind| return eval_bind(bind, ctx, local_vars),
         .void_ => return expr,
     }

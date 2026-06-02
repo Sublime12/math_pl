@@ -251,6 +251,9 @@ pub const Parser = struct {
             .bind => {
                 return parseBind(l, alloc);
             },
+            .at => {
+                return parseStructInstance(l, alloc);
+            },
             else => {},
         }
 
@@ -258,6 +261,35 @@ pub const Parser = struct {
             "Panic with token {}, value: {s}",
             .{ l.token, l.name.asStr(l.content) },
         );
+    }
+
+    fn parseStructInstance(l: *Lexer, alloc: Allocator) !Expr {
+        l.nexti();
+        l.expect(.id);
+        const name = l.name.asStr(l.content);
+        l.nexti();
+
+        l.expect(.obrace);
+        l.nexti();
+        var fields: std.StringHashMapUnmanaged(Expr) = .empty;
+        while (l.token != .cbrace) {
+            l.expect(.dot);
+            l.nexti();
+
+            l.expect(.id);
+            const field = l.name.asStr(l.content);
+            l.nexti();
+
+            l.expect(.assign);
+            l.nexti();
+
+            const value = try parseExpr(l, alloc);
+            l.expect(.comma);
+            l.nexti();
+            try fields.putNoClobber(alloc, field, value);
+        }
+        l.nexti();
+        return .{ .struct_instance = .{ .name = name, .values = fields }};
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
@@ -500,4 +532,24 @@ test "parse nested bind expressions" {
     const print_arg = print_call.fn_call.args.items[0];
     try expect(.var_, print_arg.tag());
     try expectStrings("n_double", print_arg.var_);
+}
+
+test "parse struct instance" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ @Point{
+        \\   .x = 2,
+        \\   .y = 5,
+        \\   .z = if 15 == 2 then "bonjour" else double(1 + 3 - 4,),
+        \\ };
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    std.debug.print("print struct expression: \n", .{});
+    expr.print();
 }
