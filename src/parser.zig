@@ -289,7 +289,7 @@ pub const Parser = struct {
             try fields.putNoClobber(alloc, field, value);
         }
         l.nexti();
-        return .{ .struct_instance = .{ .name = name, .values = fields }};
+        return .{ .struct_instance = .{ .name = name, .fields = fields }};
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
@@ -550,6 +550,50 @@ test "parse struct instance" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    std.debug.print("print struct expression: \n", .{});
-    expr.print();
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const struct_expr = expr.list.items[0];
+    try expect(.struct_instance, struct_expr.tag());
+    try expectStrings("Point", struct_expr.struct_instance.name);
+    try expect(3, struct_expr.struct_instance.fields.size);
+
+    const field_x = struct_expr.struct_instance.fields.get("x") orelse return std.testing.expect(false);
+
+    try expect(.arith, field_x.tag());
+    try expect(.constant, field_x.arith.tag());
+    try expect(2, field_x.arith.constant);
+
+    const field_y = struct_expr.struct_instance.fields.get("y") orelse return std.testing.expect(false);
+    try expect(.arith, field_y.tag());
+    try expect(.constant, field_y.arith.tag());
+    try expect(5, field_y.arith.constant);
+
+    const field_z = struct_expr.struct_instance.fields.get("z") orelse return std.testing.expect(false);
+    try expect(.if_, field_z.tag());
+
+    const cond = field_z.if_.eval.*;
+    try expect(.bool_, cond.tag());
+    try expect(.eql, cond.bool_.tag());
+
+    const then_branch = field_z.if_.then.*;
+    try expect(.arith, then_branch.tag());
+    try expect(.str, then_branch.arith.tag());
+    try expectStrings("bonjour", then_branch.arith.str);
+
+    const else_branch = field_z.if_.else_.*;
+    try expect(.fn_call, else_branch.tag());
+    try expectStrings("double", else_branch.fn_call.name);
+    try expect(1, else_branch.fn_call.args.items.len);
+
+    const arg_expr = else_branch.fn_call.args.items[0];
+    try expect(.arith, arg_expr.tag());
+    try expect(.minus, arg_expr.arith.tag());
+
+    const lhs_arith = arg_expr.arith.minus.lhs.*;
+    try expect(.plus, lhs_arith.arith.tag());
+
+    const rhs_arith = arg_expr.arith.minus.rhs.*;
+    try expect(.constant, rhs_arith.arith.tag());
+    try expect(4, rhs_arith.arith.constant);
 }

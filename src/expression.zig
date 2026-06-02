@@ -161,11 +161,11 @@ const Values = std.StringHashMap(Expr);
 const StructInstanceExpr = struct {
     const Self = @This();
     name: []const u8,
-    values: std.StringHashMapUnmanaged(Expr),
+    fields: std.StringHashMapUnmanaged(Expr),
 
     pub fn print(self: Self) void {
         std.debug.print("@{s}{{ ", .{self.name});
-        var it = self.values.iterator();
+        var it = self.fields.iterator();
         while (it.next()) |value| {
             std.debug.print(".{s} = ", .{value.key_ptr.*});
             value.value_ptr.print();
