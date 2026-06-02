@@ -85,6 +85,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
         },
         .struct_ => panic("eval not yet implemented for struct_", .{}),
         .struct_instance => panic("eval not yet implemented for struct_instance", .{}),
+        .field_access => panic("eval not yet implemented for field_access", .{}),
         .bind => |bind| return eval_bind(bind, ctx, local_vars),
         .void_ => return expr,
     }

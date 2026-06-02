@@ -97,6 +97,7 @@ pub const ExprTag = enum {
     list,
     struct_,
     struct_instance,
+    field_access,
     void_,
 };
 
@@ -113,6 +114,7 @@ pub const Expr = union(ExprTag) {
     list: std.ArrayList(Expr),
     struct_: StructExpr,
     struct_instance: StructInstanceExpr,
+    field_access: FieldAccessExpr,
     void_: i32,
 
     pub fn isInt(self: Self) bool {
@@ -134,6 +136,7 @@ pub const Expr = union(ExprTag) {
             .fn_def => |expr| expr.print(),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
             .struct_instance => |expr| expr.print(),
+            .field_access => |expr| expr.print(),
             .list => |expr| {
                 for (expr.items) |el| {
                     el.print();
@@ -172,6 +175,19 @@ const StructInstanceExpr = struct {
             std.debug.print(", ", .{});
         }
         std.debug.print("}}", .{});
+    }
+};
+
+pub const FieldAccessExpr = struct {
+    const Self = @This();
+
+    lhs: *Expr,
+    field: []const u8,
+
+    pub fn print(self: Self) void {
+        std.debug.print("(", .{});
+        self.lhs.print();
+        std.debug.print(".{s})", .{self.field});
     }
 };
 

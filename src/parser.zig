@@ -8,6 +8,7 @@ const FnExpr = expression_pkg.FnExpr;
 const ArithExpr = expression_pkg.ArithExpr;
 const BoolExpr = expression_pkg.BoolExpr;
 const ArgsExpr = expression_pkg.ArgsExpr;
+const FieldAccessExpr = expression_pkg.FieldAccessExpr;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
@@ -86,6 +87,21 @@ pub const Parser = struct {
                     const expr = try parseFnCall(l, alloc, name);
                     break :blk expr;
                 },
+                .dot => blk: {
+                    l.nexti();
+                    l.expect(.dot);
+                    l.nexti();
+
+                    l.expect(.id);
+                    const field = l.name.asStr(l.content);
+                    l.nexti();
+
+                    const lhs_dot = try alloc.create(Expr);
+                    lhs_dot.* = .{ .var_ = name };
+                    const expr: Expr = .{ .field_access = .{ .lhs = lhs_dot, .field = field } };
+                    // l.nexti();
+                    break :blk expr;
+                },
                 else => blk: {
                     l.nexti();
                     break :blk .{ .var_ = name };
@@ -99,7 +115,7 @@ pub const Parser = struct {
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string", .{});
 
-        while (l.tokenType == .arith_op or l.tokenType == .bool_op) {
+        while (l.tokenType == .arith_op or l.tokenType == .bool_op or l.token == .dot) {
             const op_token = l.token;
             const op_token_type = l.tokenType;
             l.nexti();
@@ -109,6 +125,7 @@ pub const Parser = struct {
             next_l.nexti();
 
             const current_name = l.name.asStr(l.content);
+
             rhs.* = switch (l.token) {
                 .id => if (next_l.token == .oparen) blk: {
                     l.nexti();
@@ -150,6 +167,10 @@ pub const Parser = struct {
 
                 lhs = try alloc.create(Expr);
                 lhs.* = .{ .bool_ = op };
+            } else if (op_token == .dot) {
+                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.var_ };
+                lhs = try alloc.create(Expr);
+                lhs.* = .{ .field_access = op };
             }
         }
 
@@ -289,7 +310,7 @@ pub const Parser = struct {
             try fields.putNoClobber(alloc, field, value);
         }
         l.nexti();
-        return .{ .struct_instance = .{ .name = name, .fields = fields }};
+        return .{ .struct_instance = .{ .name = name, .fields = fields } };
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
