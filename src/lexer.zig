@@ -96,7 +96,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .paren;
             },
-            .assign, .comma, .semicolon, .none, .end => |t| {
+            .assign, .comma, .semicolon, .none, .at, .end => |t| {
                 l.token = t;
                 l.tokenType = .other;
             },
@@ -185,6 +185,11 @@ pub const Lexer = struct {
             ';' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.semicolon);
+                return true;
+            },
+            '@' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.at);
                 return true;
             },
             '"' => {
@@ -376,6 +381,7 @@ const TokenKind = enum {
     // others
     comma,
     semicolon,
+    at,
     none,
     end,
 };
@@ -688,7 +694,7 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind struct
+        \\ let fn if then else in bind @ struct @
     ;
     var l = Lexer.init(source_code);
 
@@ -721,8 +727,16 @@ test "lex core keywords" {
     try expectEqual(.bind, l.token);
 
     l.nexti();
+    try expectStrings("@", l.name.asStr(l.content));
+    try expectEqual(.at, l.token);
+
+    l.nexti();
     try expectStrings("struct", l.name.asStr(l.content));
     try expectEqual(.struct_, l.token);
+
+    l.nexti();
+    try expectStrings("@", l.name.asStr(l.content));
+    try expectEqual(.at, l.token);
 
     l.nexti();
     try expectEqual(.end, l.token);
