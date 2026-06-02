@@ -92,7 +92,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .keyword;
             },
-            .oparen, .cparen => |t| {
+            .oparen, .cparen, .obrace, .cbrace => |t| {
                 l.token = t;
                 l.tokenType = .paren;
             },
@@ -165,6 +165,16 @@ pub const Lexer = struct {
             ')' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.cparen);
+                return true;
+            },
+            '{' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.obrace);
+                return true;
+            },
+            '}' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.cbrace);
                 return true;
             },
             '*' => {
@@ -364,6 +374,8 @@ const TokenKind = enum {
     // parentheses
     oparen,
     cparen,
+    obrace,
+    cbrace,
 
     // keywords
     arrow,
@@ -700,7 +712,7 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind @ . struct @
+        \\ let fn if then else in bind @ . { } { struct @
     ;
     var l = Lexer.init(source_code);
 
@@ -739,6 +751,18 @@ test "lex core keywords" {
     l.nexti();
     try expectStrings(".", l.name.asStr(l.content));
     try expectEqual(.dot, l.token);
+
+    l.nexti();
+    try expectStrings("{", l.name.asStr(l.content));
+    try expectEqual(.obrace, l.token);
+
+    l.nexti();
+    try expectStrings("}", l.name.asStr(l.content));
+    try expectEqual(.cbrace, l.token);
+
+    l.nexti();
+    try expectStrings("{", l.name.asStr(l.content));
+    try expectEqual(.obrace, l.token);
 
     l.nexti();
     try expectStrings("struct", l.name.asStr(l.content));
