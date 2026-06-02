@@ -88,7 +88,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -233,6 +233,9 @@ pub const Lexer = struct {
             } else if (eql("else", l.name.asStr(l.content))) {
                 l.setToken(.else_);
                 return true;
+            } else if (eql("struct", l.name.asStr(l.content))) {
+                l.setToken(.struct_);
+                return true;
             } else if (eql("true", l.name.asStr(l.content))) {
                 l.setToken(.bool_);
                 l.bool_value = true;
@@ -358,6 +361,7 @@ const TokenKind = enum {
     else_,
     let,
     if_,
+    struct_,
     self_fn,
     then,
     bind,
@@ -684,7 +688,7 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind
+        \\ let fn if then else in bind struct
     ;
     var l = Lexer.init(source_code);
 
@@ -715,6 +719,10 @@ test "lex core keywords" {
     l.nexti();
     try expectStrings("bind", l.name.asStr(l.content));
     try expectEqual(.bind, l.token);
+
+    l.nexti();
+    try expectStrings("struct", l.name.asStr(l.content));
+    try expectEqual(.struct_, l.token);
 
     l.nexti();
     try expectEqual(.end, l.token);
