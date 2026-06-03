@@ -648,7 +648,6 @@ test "parse struct instance" {
     try expect(4, rhs_arith.arith.constant);
 }
 
-
 test "parse field access with dot" {
     var arena = arena_alloc();
     defer arena.deinit();

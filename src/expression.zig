@@ -154,14 +154,14 @@ pub const Expr = union(ExprTag) {
     }
 };
 
-const StructExpr = struct {
+pub const StructExpr = struct {
     const Self = @This();
 
     name: []const u8,
     fields: std.ArrayList([]const u8),
 
     pub fn print(self: Self) void {
-        std.debug.print("struct {s}{{", .{self.name });
+        std.debug.print("struct {s}{{", .{self.name});
         for (self.fields.items) |field| {
             std.debug.print(" {s},", .{field});
         }

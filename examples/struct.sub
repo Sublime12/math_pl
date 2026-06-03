@@ -1,4 +1,4 @@
-bind p = @Point{ .x = 2, .y = 5, } in
+bind p = @Point{ .x = 2, .y = 5, .z = 12, } in
 print_int(p.x,);
 struct Point {
   x, y,

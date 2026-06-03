@@ -56,6 +56,9 @@ pub fn main() !void {
 
     const ctx = try buildContext(expr, alloc);
 
+    print("ctx: \n", .{});
+    ctx.print();
+
     print("constructed expression: \n", .{});
     expr.print();
     print("\nend expr\n", .{});

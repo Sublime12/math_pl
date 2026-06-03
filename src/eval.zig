@@ -12,6 +12,7 @@ const ArithExpr = expression_pkg.ArithExpr;
 const IfExpr = expression_pkg.IfExpr;
 const FnCallExpr = expression_pkg.FnCallExpr;
 const FnExpr = expression_pkg.FnExpr;
+const StructExpr = expression_pkg.StructExpr;
 const BindExpr = expression_pkg.BindExpr;
 
 const assert = std.debug.assert;
@@ -22,9 +23,24 @@ const print_int = stdlib_pkg.print_int;
 
 // Because functions are meant to be fun to use :)
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
+const Structs = std.StringArrayHashMapUnmanaged(StructExpr);
 const Context = struct {
+    const Self = @This();
+
     funs: Funs,
+    structs: Structs,
     alloc: Allocator,
+
+    pub fn print(self: Self) void {
+        std.debug.print("defined structs: \n", .{});
+        var it = self.structs.iterator();
+
+        while (it.next()) |struct_| {
+            std.debug.print("{s} -> ", .{struct_.key_ptr.*});
+            struct_.value_ptr.print();
+            std.debug.print("\n", .{});
+        }
+    }
 };
 
 pub fn buildContext(program: Expr, alloc: Allocator) !Context {
@@ -52,7 +68,45 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
     };
     try functions.put(alloc, "print", print_fn);
     try functions.put(alloc, "print_int", print_int_fn);
-    return .{ .funs = functions, .alloc = alloc };
+
+    var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
+
+    try add_structs(program, &ctx);
+    return ctx;
+}
+
+fn add_structs(program: Expr, ctx: *Context) !void {
+    switch (program) {
+        .arith => |expr| {
+            switch (expr) {
+                .plus, .minus, .prod => |arith_expr| {
+                    try add_structs(arith_expr.lhs.*, ctx);
+                    try add_structs(arith_expr.rhs.*, ctx);
+                },
+                .constant, .str => {},
+            }
+        },
+        .bool_ => |expr| {
+            switch (expr) {
+                .eql, .gt, .lt => |bool_expr| {
+                    try add_structs(bool_expr.lhs.*, ctx);
+                    try add_structs(bool_expr.rhs.*, ctx);
+                },
+                .constant => {},
+            }
+        },
+        .struct_ => |expr| {
+            try ctx.structs.putNoClobber(ctx.alloc, expr.name, expr);
+        },
+        .list => |list| {
+            for (list.items) |sub_expr| {
+                try add_structs(sub_expr, ctx);
+            }
+        },
+        // if you need to add structs for more elements,
+        // you can finish implement switch for all other types of expr
+        else => {},
+    }
 }
 
 pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
