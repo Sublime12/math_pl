@@ -618,3 +618,36 @@ test "parse struct instance" {
     try expect(.constant, rhs_arith.arith.tag());
     try expect(4, rhs_arith.arith.constant);
 }
+
+
+test "parse field access with dot" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ p.x.y.z;
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const level_z = expr.list.items[0];
+    try expect(.field_access, level_z.tag());
+    try expectStrings("z", level_z.field_access.field);
+
+    const level_y = level_z.field_access.lhs.*;
+    try expect(.field_access, level_y.tag());
+    try expectStrings("y", level_y.field_access.field);
+
+    const level_x = level_y.field_access.lhs.*;
+    try expect(.field_access, level_x.tag());
+    try expectStrings("x", level_x.field_access.field);
+
+    const base_var = level_x.field_access.lhs.*;
+    try expect(.var_, base_var.tag());
+    try expectStrings("p", base_var.var_);
+}
