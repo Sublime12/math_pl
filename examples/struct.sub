@@ -1,2 +1,5 @@
 bind p = @Point{ .x = 2, .y = 5, } in
-print_int(p.x.y.z,);
+print_int(p.x,);
+struct Point {
+  x, y,
+};

@@ -275,6 +275,9 @@ pub const Parser = struct {
             .at => {
                 return parseStructInstance(l, alloc);
             },
+            .struct_ => {
+                return parseStruct(l, alloc);
+            },
             else => {},
         }
 
@@ -311,6 +314,32 @@ pub const Parser = struct {
         }
         l.nexti();
         return .{ .struct_instance = .{ .name = name, .fields = fields } };
+    }
+
+    fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
+        l.expect(.struct_);
+        l.nexti();
+        l.expect(.id);
+        const struct_name = l.name.asStr(l.content);
+        l.nexti();
+        l.expect(.obrace);
+        l.nexti();
+
+        var fields: std.ArrayList([]const u8) = .empty;
+        while (l.token != .cbrace) {
+            l.expect(.id);
+            const field = l.name.asStr(l.content);
+            l.nexti();
+            try fields.append(alloc, field);
+
+            l.expect(.comma);
+            l.nexti();
+        }
+
+        l.expect(.cbrace);
+        l.nexti();
+
+        return .{ .struct_ = .{ .name = struct_name, .fields = fields } };
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
