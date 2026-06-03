@@ -144,7 +144,7 @@ pub const Expr = union(ExprTag) {
                 }
             },
             .void_ => std.debug.print("void", .{}),
-            .struct_ => panic("print for struct_ not yet implemented", .{}),
+            .struct_ => |expr| expr.print(),
             .bind => |expr| expr.print(),
         }
     }
@@ -155,8 +155,18 @@ pub const Expr = union(ExprTag) {
 };
 
 const StructExpr = struct {
+    const Self = @This();
+
     name: []const u8,
     fields: std.ArrayList([]const u8),
+
+    pub fn print(self: Self) void {
+        std.debug.print("struct {s}{{", .{self.name });
+        for (self.fields.items) |field| {
+            std.debug.print(" {s},", .{field});
+        }
+        std.debug.print(" }}", .{});
+    }
 };
 
 const Values = std.StringHashMap(Expr);
