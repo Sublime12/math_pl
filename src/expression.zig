@@ -6,6 +6,8 @@ const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
 
+const panic = std.debug.panic;
+
 pub const FnExpr = struct {
     const Self = @This();
 
@@ -93,6 +95,9 @@ pub const ExprTag = enum {
     var_,
     bind,
     list,
+    struct_,
+    struct_instance,
+    field_access,
     void_,
 };
 
@@ -107,7 +112,10 @@ pub const Expr = union(ExprTag) {
     var_: []const u8,
     bind: BindExpr,
     list: std.ArrayList(Expr),
-    void_: i32,
+    struct_: StructExpr,
+    struct_instance: StructInstanceExpr,
+    field_access: FieldAccessExpr,
+    void_: void,
 
     pub fn isInt(self: Self) bool {
         if (self.tag() != .arith) return false;
@@ -119,6 +127,10 @@ pub const Expr = union(ExprTag) {
         return self.bool_.tag() == .constant;
     }
 
+    pub fn isStructInstance(self: Self) bool {
+        return self.tag() == .struct_instance;
+    }
+
     pub fn print(self: Self) void {
         switch (self) {
             .if_ => |expr| expr.print(),
@@ -127,6 +139,8 @@ pub const Expr = union(ExprTag) {
             .fn_call => |expr| expr.print(),
             .fn_def => |expr| expr.print(),
             .var_ => |expr| std.debug.print("{s}", .{expr}),
+            .struct_instance => |expr| expr.print(),
+            .field_access => |expr| expr.print(),
             .list => |expr| {
                 for (expr.items) |el| {
                     el.print();
@@ -134,12 +148,60 @@ pub const Expr = union(ExprTag) {
                 }
             },
             .void_ => std.debug.print("void", .{}),
+            .struct_ => |expr| expr.print(),
             .bind => |expr| expr.print(),
         }
     }
 
     pub fn tag(self: Self) ExprTag {
         return @as(ExprTag, self);
+    }
+};
+
+pub const StructExpr = struct {
+    const Self = @This();
+
+    name: []const u8,
+    fields: std.ArrayList([]const u8),
+
+    pub fn print(self: Self) void {
+        std.debug.print("struct {s}{{", .{self.name});
+        for (self.fields.items) |field| {
+            std.debug.print(" {s},", .{field});
+        }
+        std.debug.print(" }}", .{});
+    }
+};
+
+const Values = std.StringHashMap(Expr);
+
+pub const StructInstanceExpr = struct {
+    const Self = @This();
+    name: []const u8,
+    fields: std.StringHashMapUnmanaged(Expr),
+
+    pub fn print(self: Self) void {
+        std.debug.print("@{s}{{ ", .{self.name});
+        var it = self.fields.iterator();
+        while (it.next()) |value| {
+            std.debug.print(".{s} = ", .{value.key_ptr.*});
+            value.value_ptr.print();
+            std.debug.print(", ", .{});
+        }
+        std.debug.print("}}", .{});
+    }
+};
+
+pub const FieldAccessExpr = struct {
+    const Self = @This();
+
+    lhs: *Expr,
+    field: []const u8,
+
+    pub fn print(self: Self) void {
+        std.debug.print("(", .{});
+        self.lhs.print();
+        std.debug.print(".{s})", .{self.field});
     }
 };
 

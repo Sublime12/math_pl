@@ -8,6 +8,7 @@ const FnExpr = expression_pkg.FnExpr;
 const ArithExpr = expression_pkg.ArithExpr;
 const BoolExpr = expression_pkg.BoolExpr;
 const ArgsExpr = expression_pkg.ArgsExpr;
+const FieldAccessExpr = expression_pkg.FieldAccessExpr;
 const Allocator = std.mem.Allocator;
 const ArenaAllocator = std.heap.ArenaAllocator;
 
@@ -37,8 +38,7 @@ pub const Parser = struct {
         var i: i32 = 0;
         while (self.lexer.token != .end) {
             const expr = try parseExpr(self.lexer, self.alloc);
-            self.lexer.expect(.semicolon);
-            self.lexer.nexti();
+            self.lexer.eat(.semicolon);
             try program.append(self.alloc, expr);
             i += 1;
         }
@@ -49,17 +49,14 @@ pub const Parser = struct {
         l.expect(.id);
         const id = l.name.asStr(l.content);
         l.nexti();
-        l.expect(.assign);
-        l.nexti();
-        l.expect(.fn_);
-        l.nexti();
+        l.eat(.assign);
+        l.eat(.fn_);
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .id) {
             try args.append(alloc, l.name.asStr(l.content));
             l.nexti();
         }
-        l.expect(.arrow);
-        l.nexti();
+        l.eat(.arrow);
 
         const body = try alloc.create(Expr);
         body.* = try parseExpr(l, alloc);
@@ -86,6 +83,20 @@ pub const Parser = struct {
                     const expr = try parseFnCall(l, alloc, name);
                     break :blk expr;
                 },
+                .dot => blk: {
+                    l.nexti();
+                    l.eat(.dot);
+
+                    l.expect(.id);
+                    const field = l.name.asStr(l.content);
+                    l.nexti();
+
+                    const lhs_dot = try alloc.create(Expr);
+                    lhs_dot.* = .{ .var_ = name };
+                    const expr: Expr = .{ .field_access = .{ .lhs = lhs_dot, .field = field } };
+                    // l.nexti();
+                    break :blk expr;
+                },
                 else => blk: {
                     l.nexti();
                     break :blk .{ .var_ = name };
@@ -99,7 +110,7 @@ pub const Parser = struct {
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string", .{});
 
-        while (l.tokenType == .arith_op or l.tokenType == .bool_op) {
+        while (l.tokenType == .arith_op or l.tokenType == .bool_op or l.token == .dot) {
             const op_token = l.token;
             const op_token_type = l.tokenType;
             l.nexti();
@@ -109,6 +120,7 @@ pub const Parser = struct {
             next_l.nexti();
 
             const current_name = l.name.asStr(l.content);
+
             rhs.* = switch (l.token) {
                 .id => if (next_l.token == .oparen) blk: {
                     l.nexti();
@@ -150,6 +162,10 @@ pub const Parser = struct {
 
                 lhs = try alloc.create(Expr);
                 lhs.* = .{ .bool_ = op };
+            } else if (op_token == .dot) {
+                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.var_ };
+                lhs = try alloc.create(Expr);
+                lhs.* = .{ .field_access = op };
             }
         }
 
@@ -157,11 +173,9 @@ pub const Parser = struct {
     }
 
     fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
-        l.expect(.oparen);
-        l.nexti();
+        l.eat(.oparen);
         const args = try parseArgs(l, alloc);
-        l.expect(.cparen);
-        l.nexti();
+        l.eat(.cparen);
         const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
         return lhs;
     }
@@ -171,15 +185,13 @@ pub const Parser = struct {
         while (l.token != .cparen) {
             const arg = try parseExpr(l, alloc);
             try args.append(alloc, arg);
-            l.expect(.comma);
-            l.nexti();
+            l.eat(.comma);
         }
         return args;
     }
 
     fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
-        l.expect(.oparen);
-        l.nexti();
+        l.eat(.oparen);
 
         const lhs = try alloc.create(Expr);
         lhs.* = try parseExpr(l, alloc);
@@ -234,22 +246,25 @@ pub const Parser = struct {
             .self_fn => {
                 const name = l.name.asStr(l.content);
                 l.nexti();
-                l.expect(.oparen);
-                l.nexti();
+                l.eat(.oparen);
                 const args = try parseArgs(l, alloc);
-                l.expect(.cparen);
-                l.nexti();
+                l.eat(.cparen);
                 return .{ .fn_call = .{ .name = name, .args = args } };
             },
             // an open paren (not in the context of a function)
             .oparen => {
                 const expr = parseBeginWithOParen(l, alloc);
-                l.expect(.cparen);
-                l.nexti();
+                l.eat(.cparen);
                 return expr;
             },
             .bind => {
                 return parseBind(l, alloc);
+            },
+            .at => {
+                return parseStructInstance(l, alloc);
+            },
+            .struct_ => {
+                return parseStruct(l, alloc);
             },
             else => {},
         }
@@ -260,18 +275,60 @@ pub const Parser = struct {
         );
     }
 
+    fn parseStructInstance(l: *Lexer, alloc: Allocator) !Expr {
+        l.nexti();
+        l.expect(.id);
+        const name = l.name.asStr(l.content);
+        l.nexti();
+
+        l.eat(.obrace);
+        var fields: std.StringHashMapUnmanaged(Expr) = .empty;
+        while (l.token != .cbrace) {
+            l.eat(.dot);
+
+            l.expect(.id);
+            const field = l.name.asStr(l.content);
+            l.nexti();
+            l.eat(.assign);
+
+            const value = try parseExpr(l, alloc);
+            l.eat(.comma);
+            try fields.putNoClobber(alloc, field, value);
+        }
+        l.nexti();
+        return .{ .struct_instance = .{ .name = name, .fields = fields } };
+    }
+
+    fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
+        l.eat(.struct_);
+        l.expect(.id);
+        const struct_name = l.name.asStr(l.content);
+        l.nexti();
+        l.eat(.obrace);
+
+        var fields: std.ArrayList([]const u8) = .empty;
+        while (l.token != .cbrace) {
+            l.expect(.id);
+            const field = l.name.asStr(l.content);
+            l.nexti();
+            try fields.append(alloc, field);
+            l.eat(.comma);
+        }
+
+        l.eat(.cbrace);
+        return .{ .struct_ = .{ .name = struct_name, .fields = fields } };
+    }
+
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
         const id = l.name.asStr(l.content);
         l.nexti();
 
-        l.expect(.assign);
-        l.nexti();
+        l.eat(.assign);
         const body = try alloc.create(Expr);
         body.* = try parseExpr(l, alloc);
-        l.expect(.in);
-        l.nexti();
+        l.eat(.in);
 
         const closure = try alloc.create(Expr);
         closure.* = try parseExpr(l, alloc);
@@ -285,12 +342,10 @@ pub const Parser = struct {
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
         const eval = try alloc.create(Expr);
         eval.* = try parseExpr(l, alloc);
-        l.expect(.then);
-        l.nexti();
+        l.eat(.then);
         const then = try alloc.create(Expr);
         then.* = try parseExpr(l, alloc);
-        l.expect(.else_);
-        l.nexti();
+        l.eat(.else_);
         const else_ = try alloc.create(Expr);
         else_.* = try parseExpr(l, alloc);
 
@@ -307,8 +362,7 @@ pub const Parser = struct {
         if (l.token == .id) {
             const lhs = try alloc.create(Expr);
             lhs.* = try parseExpr(l, alloc);
-            l.expect(.eql);
-            l.nexti();
+            l.eat(.eql);
             const rhs = try alloc.create(Expr);
             rhs.* = try parseExpr(l, alloc);
             return .{
@@ -500,4 +554,100 @@ test "parse nested bind expressions" {
     const print_arg = print_call.fn_call.args.items[0];
     try expect(.var_, print_arg.tag());
     try expectStrings("n_double", print_arg.var_);
+}
+
+test "parse struct instance" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ @Point{
+        \\   .x = 2,
+        \\   .y = 5,
+        \\   .z = if 15 == 2 then "bonjour" else double(1 + 3 - 4,),
+        \\ };
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const struct_expr = expr.list.items[0];
+    try expect(.struct_instance, struct_expr.tag());
+    try expectStrings("Point", struct_expr.struct_instance.name);
+    try expect(3, struct_expr.struct_instance.fields.size);
+
+    const field_x = struct_expr.struct_instance.fields.get("x") orelse return std.testing.expect(false);
+
+    try expect(.arith, field_x.tag());
+    try expect(.constant, field_x.arith.tag());
+    try expect(2, field_x.arith.constant);
+
+    const field_y = struct_expr.struct_instance.fields.get("y") orelse return std.testing.expect(false);
+    try expect(.arith, field_y.tag());
+    try expect(.constant, field_y.arith.tag());
+    try expect(5, field_y.arith.constant);
+
+    const field_z = struct_expr.struct_instance.fields.get("z") orelse return std.testing.expect(false);
+    try expect(.if_, field_z.tag());
+
+    const cond = field_z.if_.eval.*;
+    try expect(.bool_, cond.tag());
+    try expect(.eql, cond.bool_.tag());
+
+    const then_branch = field_z.if_.then.*;
+    try expect(.arith, then_branch.tag());
+    try expect(.str, then_branch.arith.tag());
+    try expectStrings("bonjour", then_branch.arith.str);
+
+    const else_branch = field_z.if_.else_.*;
+    try expect(.fn_call, else_branch.tag());
+    try expectStrings("double", else_branch.fn_call.name);
+    try expect(1, else_branch.fn_call.args.items.len);
+
+    const arg_expr = else_branch.fn_call.args.items[0];
+    try expect(.arith, arg_expr.tag());
+    try expect(.minus, arg_expr.arith.tag());
+
+    const lhs_arith = arg_expr.arith.minus.lhs.*;
+    try expect(.plus, lhs_arith.arith.tag());
+
+    const rhs_arith = arg_expr.arith.minus.rhs.*;
+    try expect(.constant, rhs_arith.arith.tag());
+    try expect(4, rhs_arith.arith.constant);
+}
+
+test "parse field access with dot" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ p.x.y.z;
+    ;
+    var lexer = Lexer.init(source_code);
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const level_z = expr.list.items[0];
+    try expect(.field_access, level_z.tag());
+    try expectStrings("z", level_z.field_access.field);
+
+    const level_y = level_z.field_access.lhs.*;
+    try expect(.field_access, level_y.tag());
+    try expectStrings("y", level_y.field_access.field);
+
+    const level_x = level_y.field_access.lhs.*;
+    try expect(.field_access, level_x.tag());
+    try expectStrings("x", level_x.field_access.field);
+
+    const base_var = level_x.field_access.lhs.*;
+    try expect(.var_, base_var.tag());
+    try expectStrings("p", base_var.var_);
 }

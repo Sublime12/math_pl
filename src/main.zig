@@ -19,20 +19,10 @@ const print = std.debug.print;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 const buildContext = eval_pkg.buildContext;
+const semAnal = eval_pkg.semAnal;
 const expect = std.testing.expectEqual;
 
 pub fn main() !void {
-    // const source_code =
-    //     \\let fact = fn n ->
-    //     \\    if (n +  1== 2 * 1 - 3 )
-    //     \\    then 1
-    //     \\    else n * self_fn (n - 12 * 3 + 8, )
-    // ;
-
-    // The main program is going to be all expressions that are
-    // not function declaration in the global scope
-    // print(ascii_code), print the char corresponding to that ascii code
-
     const alloc = std.heap.page_allocator;
     const args = try std.process.argsAlloc(alloc);
     assert(args.len == 2);
@@ -55,10 +45,7 @@ pub fn main() !void {
     defer local_vars.deinit();
 
     const ctx = try buildContext(expr, alloc);
-
-    print("constructed expression: \n", .{});
-    expr.print();
-    print("\nend expr\n", .{});
+    semAnal(expr, ctx);
 
     _ = eval(expr, ctx, local_vars);
     print("\n", .{});

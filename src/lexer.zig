@@ -56,6 +56,11 @@ pub const Lexer = struct {
         };
     }
 
+    pub fn eat(l: *Lexer, token: TokenKind) void {
+        l.expect(token);
+        l.nexti();
+    }
+
     pub fn expect(l: *Lexer, expected: TokenKind) void {
         if (l.token != expected) {
             panic("expected this {}, found this {} at {}:{}, name: {s}, integer {?}", .{
@@ -88,15 +93,15 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
-            .oparen, .cparen => |t| {
+            .oparen, .cparen, .obrace, .cbrace => |t| {
                 l.token = t;
                 l.tokenType = .paren;
             },
-            .assign, .comma, .semicolon, .none, .end => |t| {
+            .assign, .comma, .dot, .semicolon, .none, .at, .end => |t| {
                 l.token = t;
                 l.tokenType = .other;
             },
@@ -167,6 +172,16 @@ pub const Lexer = struct {
                 l.setToken(.cparen);
                 return true;
             },
+            '{' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.obrace);
+                return true;
+            },
+            '}' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.cbrace);
+                return true;
+            },
             '*' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.prod);
@@ -182,9 +197,19 @@ pub const Lexer = struct {
                 l.setToken(.comma);
                 return true;
             },
+            '.' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.dot);
+                return true;
+            },
             ';' => {
                 l.clearAppendSymbol(x);
                 l.setToken(.semicolon);
+                return true;
+            },
+            '@' => {
+                l.clearAppendSymbol(x);
+                l.setToken(.at);
                 return true;
             },
             '"' => {
@@ -232,6 +257,9 @@ pub const Lexer = struct {
                 return true;
             } else if (eql("else", l.name.asStr(l.content))) {
                 l.setToken(.else_);
+                return true;
+            } else if (eql("struct", l.name.asStr(l.content))) {
+                l.setToken(.struct_);
                 return true;
             } else if (eql("true", l.name.asStr(l.content))) {
                 l.setToken(.bool_);
@@ -351,6 +379,8 @@ const TokenKind = enum {
     // parentheses
     oparen,
     cparen,
+    obrace,
+    cbrace,
 
     // keywords
     arrow,
@@ -358,6 +388,7 @@ const TokenKind = enum {
     else_,
     let,
     if_,
+    struct_,
     self_fn,
     then,
     bind,
@@ -371,7 +402,9 @@ const TokenKind = enum {
 
     // others
     comma,
+    dot,
     semicolon,
+    at,
     none,
     end,
 };
@@ -684,7 +717,7 @@ test "lex arithmetic operators and punctuation" {
 
 test "lex core keywords" {
     const source_code =
-        \\ let fn if then else in bind
+        \\ let fn if then else in bind @ . { } { struct @
     ;
     var l = Lexer.init(source_code);
 
@@ -715,6 +748,34 @@ test "lex core keywords" {
     l.nexti();
     try expectStrings("bind", l.name.asStr(l.content));
     try expectEqual(.bind, l.token);
+
+    l.nexti();
+    try expectStrings("@", l.name.asStr(l.content));
+    try expectEqual(.at, l.token);
+
+    l.nexti();
+    try expectStrings(".", l.name.asStr(l.content));
+    try expectEqual(.dot, l.token);
+
+    l.nexti();
+    try expectStrings("{", l.name.asStr(l.content));
+    try expectEqual(.obrace, l.token);
+
+    l.nexti();
+    try expectStrings("}", l.name.asStr(l.content));
+    try expectEqual(.cbrace, l.token);
+
+    l.nexti();
+    try expectStrings("{", l.name.asStr(l.content));
+    try expectEqual(.obrace, l.token);
+
+    l.nexti();
+    try expectStrings("struct", l.name.asStr(l.content));
+    try expectEqual(.struct_, l.token);
+
+    l.nexti();
+    try expectStrings("@", l.name.asStr(l.content));
+    try expectEqual(.at, l.token);
 
     l.nexti();
     try expectEqual(.end, l.token);
