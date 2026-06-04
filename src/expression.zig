@@ -127,6 +127,10 @@ pub const Expr = union(ExprTag) {
         return self.bool_.tag() == .constant;
     }
 
+    pub fn isStructInstance(self: Self) bool {
+        return self.tag() == .struct_instance;
+    }
+
     pub fn print(self: Self) void {
         switch (self) {
             .if_ => |expr| expr.print(),
@@ -171,7 +175,7 @@ pub const StructExpr = struct {
 
 const Values = std.StringHashMap(Expr);
 
-const StructInstanceExpr = struct {
+pub const StructInstanceExpr = struct {
     const Self = @This();
     name: []const u8,
     fields: std.StringHashMapUnmanaged(Expr),

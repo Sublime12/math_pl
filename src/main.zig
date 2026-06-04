@@ -58,9 +58,6 @@ pub fn main() !void {
     const ctx = try buildContext(expr, alloc);
     semAnal(expr, ctx);
 
-    print("ctx: \n", .{});
-    ctx.print();
-
     print("constructed expression: \n", .{});
     expr.print();
     print("\nend expr\n", .{});

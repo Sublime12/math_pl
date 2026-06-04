@@ -13,6 +13,7 @@ const IfExpr = expression_pkg.IfExpr;
 const FnCallExpr = expression_pkg.FnCallExpr;
 const FnExpr = expression_pkg.FnExpr;
 const StructExpr = expression_pkg.StructExpr;
+const StructInstanceExpr = expression_pkg.StructInstanceExpr;
 const BindExpr = expression_pkg.BindExpr;
 
 const assert = std.debug.assert;
@@ -199,9 +200,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
         .fn_call => |fn_call| {
             return eval_fn_call(fn_call, ctx, local_vars);
         },
-        .fn_def => {
-            return expr;
-        },
+        .fn_def => return expr,
         .list => |list| {
             var list_evaluated: std.ArrayList(Expr) = .empty;
             for (list.items) |el_expr| {
@@ -211,7 +210,15 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             return list_evaluated.getLast();
         },
         .struct_ => panic("eval not yet implemented for struct_", .{}),
-        .struct_instance => panic("eval not yet implemented for struct_instance", .{}),
+        .struct_instance => |struct_instance| {
+            var new_expr: StructInstanceExpr = .{ .name = struct_instance.name, .fields = .empty };
+            var it = struct_instance.fields.iterator();
+            while (it.next()) |inst_field| {
+                const efield = eval(inst_field.value_ptr.*, ctx, local_vars);
+                new_expr.fields.putNoClobber(ctx.alloc, inst_field.key_ptr.*, efield) catch unreachable;
+            }
+            return .{ .struct_instance = new_expr };
+        },
         .field_access => panic("eval not yet implemented for field_access", .{}),
         .bind => |bind| return eval_bind(bind, ctx, local_vars),
         .void_ => return expr,
@@ -226,6 +233,8 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
             .{ .int = ebody.arith.constant }
         else if (ebody.isBool())
             .{ .bool_ = ebody.bool_.constant }
+        else if (ebody.isStructInstance())
+            .{ .struct_instance = ebody.struct_instance }
         else
             panic("body must be evaluated of type int or bool", .{});
 
@@ -267,6 +276,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
     return switch (value) {
         .bool_ => |var_| .{ .bool_ = .{ .constant = var_ } },
         .int => |var_| .{ .arith = .{ .constant = var_ } },
+        .struct_instance => |var_| .{ .struct_instance = var_ },
     };
 }
 
@@ -324,12 +334,14 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars) Expr {
 const VarTag = enum {
     int,
     bool_,
+    struct_instance,
 };
 
 const Var = union(VarTag) {
     const Self = @This();
     int: i32,
     bool_: bool,
+    struct_instance: StructInstanceExpr,
 
     pub fn tag(self: Self) VarTag {
         return @as(VarTag, self);
