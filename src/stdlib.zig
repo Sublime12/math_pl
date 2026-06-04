@@ -21,7 +21,6 @@ pub fn print(vars: Vars) Expr {
 }
 
 pub fn print_int(vars: Vars) Expr {
-    // assert(vars.tag() == .arith and vars.arith.tag() == .constant);
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
