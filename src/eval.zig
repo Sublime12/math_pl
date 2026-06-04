@@ -209,7 +209,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             }
             return list_evaluated.getLast();
         },
-        .struct_ => panic("eval not yet implemented for struct_", .{}),
+        .struct_ => return expr,
         .struct_instance => |struct_instance| {
             var new_expr: StructInstanceExpr = .{ .name = struct_instance.name, .fields = .empty };
             var it = struct_instance.fields.iterator();
