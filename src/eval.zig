@@ -223,7 +223,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
             const elhs = eval(field_access.lhs.*, ctx, local_vars);
             assert(elhs.tag() == .struct_instance);
             return elhs.struct_instance.fields.get(field_access.field) orelse {
-                panic("tried accessing {s} in struct {s} but do not exist", .{field_access.field, elhs.struct_instance.name});
+                panic("tried accessing {s} in struct {s} but do not exist", .{ field_access.field, elhs.struct_instance.name });
             };
         },
         .bind => |bind| return eval_bind(bind, ctx, local_vars),
