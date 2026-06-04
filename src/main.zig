@@ -19,6 +19,7 @@ const print = std.debug.print;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
 const buildContext = eval_pkg.buildContext;
+const semAnal = eval_pkg.semAnal;
 const expect = std.testing.expectEqual;
 
 pub fn main() !void {
@@ -55,6 +56,7 @@ pub fn main() !void {
     defer local_vars.deinit();
 
     const ctx = try buildContext(expr, alloc);
+    semAnal(expr, ctx);
 
     print("ctx: \n", .{});
     ctx.print();

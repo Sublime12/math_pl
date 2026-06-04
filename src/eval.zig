@@ -43,6 +43,73 @@ const Context = struct {
     }
 };
 
+pub fn semAnal(program: Expr, ctx: Context) void {
+    switch (program) {
+        .arith => |arith_expr| {
+            switch (arith_expr) {
+                .plus, .minus, .prod => |expr| {
+                    semAnal(expr.lhs.*, ctx);
+                    semAnal(expr.rhs.*, ctx);
+                },
+                .constant, .str => {},
+            }
+        },
+        .bool_ => |bool_expr| {
+            switch (bool_expr) {
+                .eql, .gt, .lt => |expr| {
+                    semAnal(expr.lhs.*, ctx);
+                    semAnal(expr.rhs.*, ctx);
+                },
+                .constant => {},
+            }
+        },
+        .bind => |bind_expr| {
+            semAnal(bind_expr.body.*, ctx);
+            semAnal(bind_expr.closure.*, ctx);
+        },
+        .field_access => |field_expr| semAnal(field_expr.lhs.*, ctx),
+        .fn_call => |fn_call_expr| {
+            for (fn_call_expr.args.items) |arg| {
+                semAnal(arg, ctx);
+            }
+        },
+        .fn_def => |fn_def_expr| {
+            switch (fn_def_expr.body) {
+                .fn_std => |fn_std| semAnal(fn_std.body.*, ctx),
+                .fn_binding => {},
+            }
+        },
+        // base case
+        .struct_instance => |struct_inst| {
+            const struct_ = ctx.structs.get(struct_inst.name) orelse {
+                panic("tried getting struct {s} but not defined\n", .{struct_inst.name});
+            };
+
+            var inst_fields = struct_inst.fields.iterator();
+            while (inst_fields.next()) |inst_field| {
+                if (!contains(inst_field.key_ptr.*, struct_.fields)) {
+                    panic(
+                        "struct instance contains field {s} but not defined in {s}",
+                        .{inst_field.key_ptr.*, struct_.name},
+                    );
+                }
+            }
+        },
+        .list => |list_expr| {
+            for (list_expr.items) |sub_expr| {
+                semAnal(sub_expr, ctx);
+            }
+        },
+    }
+}
+
+fn contains(item: []const u8, values: std.ArrayList([]const u8)) bool {
+    for (values.items) |val| {
+        if (std.mem.eql(u8, item, val)) return true;
+    }
+    return false;
+}
+
 pub fn buildContext(program: Expr, alloc: Allocator) !Context {
     assert(program.tag() == .list);
     var functions: Funs = .empty;
