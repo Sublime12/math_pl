@@ -90,7 +90,7 @@ pub fn semAnal(program: Expr, ctx: Context) void {
                 if (!contains(inst_field.key_ptr.*, struct_.fields)) {
                     panic(
                         "struct instance contains field {s} but not defined in {s}",
-                        .{inst_field.key_ptr.*, struct_.name},
+                        .{ inst_field.key_ptr.*, struct_.name },
                     );
                 }
             }
@@ -100,6 +100,12 @@ pub fn semAnal(program: Expr, ctx: Context) void {
                 semAnal(sub_expr, ctx);
             }
         },
+        .if_ => |if_expr| {
+            semAnal(if_expr.eval.*, ctx);
+            semAnal(if_expr.then.*, ctx);
+            semAnal(if_expr.else_.*, ctx);
+        },
+        .struct_, .var_, .void_ => {},
     }
 }
 
