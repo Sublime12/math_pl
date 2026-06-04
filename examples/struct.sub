@@ -1,5 +1,5 @@
-bind p = @Point{ .x = 2, .y = 5, } in
-print_int(p.x,);
+bind p = @Point{ .x = 2, .y = @Point{ .x = 69, .y = 15, }, } in
+print_int(p.x + (p.y.x),);
 struct Point {
   x, y,
 };

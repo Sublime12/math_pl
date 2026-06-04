@@ -17,7 +17,7 @@ pub fn print(vars: Vars) Expr {
     assert(c.tag() == .int);
 
     print_ascii(c.int);
-    return .{ .void_ = 0 };
+    return .{ .void_ = {} };
 }
 
 pub fn print_int(vars: Vars) Expr {
@@ -28,7 +28,7 @@ pub fn print_int(vars: Vars) Expr {
 
     assert(c.tag() == .int);
     std.debug.print("{}", .{c.int});
-    return .{ .void_ = 0 };
+    return .{ .void_ = {} };
 }
 
 pub fn print_ascii(ascii: i32) void {

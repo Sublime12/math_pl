@@ -115,7 +115,7 @@ pub const Expr = union(ExprTag) {
     struct_: StructExpr,
     struct_instance: StructInstanceExpr,
     field_access: FieldAccessExpr,
-    void_: i32,
+    void_: void,
 
     pub fn isInt(self: Self) bool {
         if (self.tag() != .arith) return false;
