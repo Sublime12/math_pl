@@ -56,6 +56,11 @@ pub const Lexer = struct {
         };
     }
 
+    pub fn eat(l: *Lexer, token: TokenKind) void {
+        l.expect(token);
+        l.nexti();
+    }
+
     pub fn expect(l: *Lexer, expected: TokenKind) void {
         if (l.token != expected) {
             panic("expected this {}, found this {} at {}:{}, name: {s}, integer {?}", .{
