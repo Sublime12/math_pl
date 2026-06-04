@@ -45,6 +45,22 @@ const Context = struct {
 
 pub fn semAnal(program: Expr, ctx: Context) void {
     switch (program) {
+        // base case
+        .struct_instance => |struct_inst| {
+            const struct_ = ctx.structs.get(struct_inst.name) orelse {
+                panic("tried getting struct {s} but not defined\n", .{struct_inst.name});
+            };
+
+            var inst_fields = struct_inst.fields.iterator();
+            while (inst_fields.next()) |inst_field| {
+                if (!contains(inst_field.key_ptr.*, struct_.fields)) {
+                    panic(
+                        "struct instance contains field {s} but not defined in {s}",
+                        .{ inst_field.key_ptr.*, struct_.name },
+                    );
+                }
+            }
+        },
         .arith => |arith_expr| {
             switch (arith_expr) {
                 .plus, .minus, .prod => |expr| {
@@ -77,22 +93,6 @@ pub fn semAnal(program: Expr, ctx: Context) void {
             switch (fn_def_expr.body) {
                 .fn_std => |fn_std| semAnal(fn_std.body.*, ctx),
                 .fn_binding => {},
-            }
-        },
-        // base case
-        .struct_instance => |struct_inst| {
-            const struct_ = ctx.structs.get(struct_inst.name) orelse {
-                panic("tried getting struct {s} but not defined\n", .{struct_inst.name});
-            };
-
-            var inst_fields = struct_inst.fields.iterator();
-            while (inst_fields.next()) |inst_field| {
-                if (!contains(inst_field.key_ptr.*, struct_.fields)) {
-                    panic(
-                        "struct instance contains field {s} but not defined in {s}",
-                        .{ inst_field.key_ptr.*, struct_.name },
-                    );
-                }
             }
         },
         .list => |list_expr| {
