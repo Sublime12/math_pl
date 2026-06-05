@@ -33,4 +33,7 @@ jobs:
       - name: Run tests
         run:
           ./zig-out/bin/test
+      - name: Run examples
+        run:
+          printf '%s\n' examples/*.sub | xargs -I {} ./zig-out/bin/sub_pl {}
 
