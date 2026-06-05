@@ -19,13 +19,14 @@ const BindExpr = expression_pkg.BindExpr;
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-const print = stdlib_pkg.print;
-const print_int = stdlib_pkg.print_int;
-const print_str = stdlib_pkg.print_str;
-const getc = stdlib_pkg.getc;
+const registerFunctions = stdlib_pkg.registerFunctions;
+// const print = stdlib_pkg.print;
+// const print_int = stdlib_pkg.print_int;
+// const print_str = stdlib_pkg.print_str;
+// const getc = stdlib_pkg.getc;
 
 // Because functions are meant to be fun to use :)
-const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
+pub const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
 const Structs = std.StringArrayHashMapUnmanaged(StructExpr);
 const Context = struct {
     const Self = @This();
@@ -127,49 +128,8 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
-
-    {
-        var print_args: std.ArrayList([]const u8) = .empty;
-        try print_args.append(alloc, "c");
-        const print_fn: FnExpr = .{
-            .name = "print",
-            .args = print_args,
-            .body = .{ .fn_binding = .{ .fn_ = print } },
-        };
-        try functions.put(alloc, "print", print_fn);
-    }
-
-    {
-        var print_int_args: std.ArrayList([]const u8) = .empty;
-        try print_int_args.append(alloc, "c");
-        const print_int_fn: FnExpr = .{
-            .name = "print_int",
-            .args = print_int_args,
-            .body = .{ .fn_binding = .{ .fn_ = print_int } },
-        };
-        try functions.put(alloc, "print_int", print_int_fn);
-    }
-    {
-        var print_str_args: std.ArrayList([]const u8) = .empty;
-        try print_str_args.append(alloc, "str");
-        const print_str_fn: FnExpr = .{
-            .name = "print_str",
-            .args = print_str_args,
-            .body = .{ .fn_binding = .{ .fn_ = print_str } },
-        };
-        try functions.put(alloc, "print_str", print_str_fn);
-    }
-    {
-        var getc_args: std.ArrayList([]const u8) = .empty;
-        try getc_args.append(alloc, "str");
-        try getc_args.append(alloc, "i");
-        const getc_fn: FnExpr = .{
-            .name = "getc",
-            .args = getc_args,
-            .body = .{ .fn_binding = .{ .fn_ = getc } },
-        };
-        try functions.put(alloc, "getc", getc_fn);
-    }
+    
+    try registerFunctions(alloc, &functions);
 
     var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
 
