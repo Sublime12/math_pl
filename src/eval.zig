@@ -22,6 +22,7 @@ const panic = std.debug.panic;
 const print = stdlib_pkg.print;
 const print_int = stdlib_pkg.print_int;
 const print_str = stdlib_pkg.print_str;
+const getc = stdlib_pkg.getc;
 
 // Because functions are meant to be fun to use :)
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -126,33 +127,49 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
-    var print_str_args: std.ArrayList([]const u8) = .empty;
-    try print_str_args.append(alloc, "str");
-    const print_str_fn: FnExpr = .{
-        .name = "print_str",
-        .args = print_str_args,
-        .body = .{ .fn_binding = .{ .fn_ = print_str } },
-    };
 
-    var print_args: std.ArrayList([]const u8) = .empty;
-    try print_args.append(alloc, "c");
-    const print_fn: FnExpr = .{
-        .name = "print",
-        .args = print_args,
-        .body = .{ .fn_binding = .{ .fn_ = print } },
-    };
+    {
+        var print_args: std.ArrayList([]const u8) = .empty;
+        try print_args.append(alloc, "c");
+        const print_fn: FnExpr = .{
+            .name = "print",
+            .args = print_args,
+            .body = .{ .fn_binding = .{ .fn_ = print } },
+        };
+        try functions.put(alloc, "print", print_fn);
+    }
 
-    var print_int_args: std.ArrayList([]const u8) = .empty;
-    try print_int_args.append(alloc, "c");
-    const print_int_fn: FnExpr = .{
-        .name = "print_int",
-        .args = print_int_args,
-        .body = .{ .fn_binding = .{ .fn_ = print_int } },
-    };
-
-    try functions.put(alloc, "print_str", print_str_fn);
-    try functions.put(alloc, "print", print_fn);
-    try functions.put(alloc, "print_int", print_int_fn);
+    {
+        var print_int_args: std.ArrayList([]const u8) = .empty;
+        try print_int_args.append(alloc, "c");
+        const print_int_fn: FnExpr = .{
+            .name = "print_int",
+            .args = print_int_args,
+            .body = .{ .fn_binding = .{ .fn_ = print_int } },
+        };
+        try functions.put(alloc, "print_int", print_int_fn);
+    }
+    {
+        var print_str_args: std.ArrayList([]const u8) = .empty;
+        try print_str_args.append(alloc, "str");
+        const print_str_fn: FnExpr = .{
+            .name = "print_str",
+            .args = print_str_args,
+            .body = .{ .fn_binding = .{ .fn_ = print_str } },
+        };
+        try functions.put(alloc, "print_str", print_str_fn);
+    }
+    {
+        var getc_args: std.ArrayList([]const u8) = .empty;
+        try getc_args.append(alloc, "str");
+        try getc_args.append(alloc, "i");
+        const getc_fn: FnExpr = .{
+            .name = "getc",
+            .args = getc_args,
+            .body = .{ .fn_binding = .{ .fn_ = getc } },
+        };
+        try functions.put(alloc, "getc", getc_fn);
+    }
 
     var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
 
@@ -255,8 +272,12 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
             .{ .bool_ = ebody.bool_.constant }
         else if (ebody.isStructInstance())
             .{ .struct_instance = ebody.struct_instance }
+        else if (ebody.isStr())
+            .{ .str = ebody.arith.str }
+        else if (ebody.isVoid())
+            .{ .void_ = {} }
         else
-            panic("body must be evaluated of type int or bool", .{});
+            panic("body must be evaluated of type int or bool or struct_instance or str", .{});
 
     var bind_vars = local_vars.clone() catch unreachable;
     bind_vars.putNoClobber(id, body) catch unreachable;
@@ -267,6 +288,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
+    assert(fn_def.args.items.len == expr.args.items.len);
     var fn_params: Vars = .init(ctx.alloc);
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
@@ -302,6 +324,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
         .int => |var_| .{ .arith = .{ .constant = var_ } },
         .struct_instance => |var_| .{ .struct_instance = var_ },
         .str => |var_| .{ .arith = .{ .str = var_ } },
+        .void_ => .{ .void_ = {} },
     };
 }
 
@@ -361,6 +384,7 @@ const VarTag = enum {
     bool_,
     str,
     struct_instance,
+    void_,
 };
 
 const Var = union(VarTag) {
@@ -369,6 +393,7 @@ const Var = union(VarTag) {
     bool_: bool,
     str: []const u8,
     struct_instance: StructInstanceExpr,
+    void_: void,
 
     pub fn tag(self: Self) VarTag {
         return @as(VarTag, self);
