@@ -36,6 +36,7 @@ const SliceId = struct {
 };
 
 pub const Lexer = struct {
+    file_path: []const u8,
     content: []const u8,
     token: TokenKind,
     tokenType: TokenType,
@@ -44,8 +45,9 @@ pub const Lexer = struct {
     cursor: Cursor,
     name: SliceId,
 
-    pub fn init(content: []const u8) Lexer {
+    pub fn init(content: []const u8, file_path: []const u8) Lexer {
         return .{
+            .file_path = file_path,
             .content = content,
             .token = .none,
             .cursor = .empty,
@@ -61,16 +63,37 @@ pub const Lexer = struct {
         l.nexti();
     }
 
+    fn current_line(l: *Lexer) []const u8 {
+        var begin: usize = l.cursor.pos;
+        var end: usize = l.cursor.pos;
+
+        while (l.content[begin] != '\n' and begin >= 0) begin -= 1;
+        while (l.content[end] != '\n' and end < l.content.len) end += 1;
+
+        return l.content[begin..end];
+    }
+
     pub fn expect(l: *Lexer, expected: TokenKind) void {
+        const GREEN_TAG = "\x1b[32m";
+        const RED_TAG = "\x1b[31m";
+        const END_TAG = "\x1b[0m";
         if (l.token != expected) {
-            panic("expected this {}, found this {} at {}:{}, name: {s}, integer {?}", .{
-                expected,
-                l.token,
-                l.cursor.row,
+            const panic_line = l.current_line();
+            std.debug.print(GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line{s}\n", .{
+                l.file_path,
+                l.cursor.row + 1,
                 l.cursor.col,
+                expected.getStrRepresention(),
                 l.name.asStr(l.content),
-                l.integer_value,
+                panic_line,
             });
+
+            for (0..l.cursor.col - 1) |_| {
+                std.debug.print(" ", .{});
+            }
+            std.debug.print(RED_TAG ++ "^" ++ END_TAG ++ "\n", .{});
+
+            std.process.exit(1);
         }
     }
 
@@ -367,6 +390,8 @@ pub const Lexer = struct {
 };
 
 const TokenKind = enum {
+    const Self = @This();
+
     // Cmp ops
     eql,
     assign,
@@ -407,6 +432,40 @@ const TokenKind = enum {
     at,
     none,
     end,
+
+    pub fn getStrRepresention(token: Self) []const u8 {
+        return switch (token) {
+            .eql => "==",
+            .assign => "=",
+            .minus => "-",
+            .plus => "+",
+            .prod => "*",
+            .oparen => "(",
+            .cparen => ")",
+            .obrace => "{",
+            .cbrace => "}",
+            .arrow => "->",
+            .fn_ => "fn",
+            .else_ => "else",
+            .let => "let",
+            .if_ => "if",
+            .struct_ => "struct",
+            .self_fn => "self_fn",
+            .then => "then",
+            .bind => "bind",
+            .in => "in",
+            .int => "int",
+            .bool_ => "bool",
+            .id => "identifier",
+            .str => "str",
+            .comma => ",",
+            .dot => ".",
+            .semicolon => ";",
+            .at => "@",
+            .none => "none",
+            .end => "end",
+        };
+    }
 };
 
 const TokenType = enum {
@@ -447,7 +506,7 @@ test "lex string" {
         \\ ""a""
         \\ "a\n"
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("bon \"abc\" x", l.name.asStr(l.content));
@@ -466,7 +525,7 @@ test "lex identifiers" {
     const source_code =
         \\ variable_name x123 _secret_id
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("variable_name", l.name.asStr(l.content));
@@ -488,7 +547,7 @@ test "lex integers" {
     const source_code =
         \\ 123 0 4567
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectEqual(123, l.integer_value);
@@ -511,7 +570,7 @@ test "lex booleans" {
     const source_code =
         \\ true false
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectEqual(true, l.bool_value);
@@ -531,7 +590,7 @@ test "lex if expression" {
         \\ print_str("" hello "world" "",)
         \\ else double(7) ;
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("if", l.name.asStr(l.content));
@@ -617,7 +676,7 @@ test "lex bind and self_fn" {
     const source_code =
         \\ bind f = x;
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("bind", l.name.asStr(l.content));
@@ -640,7 +699,7 @@ test "lex false and equality" {
     const source_code =
         \\ false == true
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("false", l.name.asStr(l.content));
@@ -659,7 +718,7 @@ test "lex false and equality" {
 
 test "lex empty input and end token" {
     const source_code = "   ";
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectEqual(.end, l.token);
@@ -669,7 +728,7 @@ test "lex arithmetic operators and punctuation" {
     const source_code =
         \\ (1 + 2) * 3 - 4,
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("(", l.name.asStr(l.content));
@@ -719,7 +778,7 @@ test "lex core keywords" {
     const source_code =
         \\ let fn if then else in bind @ . { } { struct @
     ;
-    var l = Lexer.init(source_code);
+    var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
     try expectStrings("let", l.name.asStr(l.content));

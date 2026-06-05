@@ -387,7 +387,7 @@ test "simple fn expression" {
     const source_code =
         \\ print(97, );
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
     try expect(.list, expr.tag());
@@ -410,7 +410,7 @@ test "parse print_str function" {
     const source_code =
         \\ print_str("bonjour"+"papa",);
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
@@ -447,7 +447,7 @@ test "parse function definition" {
     const source_code =
         \\ let add = fn x y -> x + y;
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
@@ -474,7 +474,7 @@ test "parse if expression" {
     const source_code =
         \\ if n == 1 then "yes" else "no";
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
@@ -518,7 +518,7 @@ test "parse nested bind expressions" {
         \\ bind n_double = double(n, ) in
         \\ print_int(n_double,);
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
@@ -568,7 +568,7 @@ test "parse struct instance" {
         \\   .z = if 15 == 2 then "bonjour" else double(1 + 3 - 4,),
         \\ };
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
@@ -628,7 +628,7 @@ test "parse field access with dot" {
     const source_code =
         \\ p.x.y.z;
     ;
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
