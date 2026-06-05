@@ -36,7 +36,7 @@ pub fn main() !void {
     const source_code = try file.readToEndAlloc(alloc, MAX_SIZE);
     defer alloc.free(source_code);
 
-    var lexer = Lexer.init(source_code);
+    var lexer = Lexer.init(source_code, file_path);
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();

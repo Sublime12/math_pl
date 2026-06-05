@@ -182,8 +182,6 @@ pub const StructExpr = struct {
     }
 };
 
-const Values = std.StringHashMap(Expr);
-
 pub const StructInstanceExpr = struct {
     const Self = @This();
     name: []const u8,
