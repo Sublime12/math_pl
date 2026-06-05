@@ -1,9 +1,9 @@
-print_plus("bonjour", 0, 7,);
-let print_plus = fn str n l ->
+print_underscore("bonjour", 0, 7,);
+let print_underscore= fn str n l ->
   if n == l then 0
   else
     bind c = getc(str, n,) in
     bind _a = print(c,) in
     bind _b = print_str("_",) in
-    print_plus(str, n + 1, l,)
+    print_underscore(str, n + 1, l,)
 ;
