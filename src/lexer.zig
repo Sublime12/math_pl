@@ -67,8 +67,8 @@ pub const Lexer = struct {
         var begin: usize = l.cursor.pos;
         var end: usize = l.cursor.pos;
 
-        while (l.content[begin] != '\n' and begin >= 0) begin -= 1;
-        while (l.content[end] != '\n' and end < l.content.len) end += 1;
+        while (begin > 0 and l.content[begin] != '\n') begin -= 1;
+        while (end < l.content.len and l.content[end] != '\n') end += 1;
 
         return l.content[begin..end];
     }
@@ -79,7 +79,7 @@ pub const Lexer = struct {
         const END_TAG = "\x1b[0m";
         if (l.token != expected) {
             const panic_line = l.current_line();
-            std.debug.print(GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line{s}\n", .{
+            std.debug.print("\n" ++ GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line\n{s}\n", .{
                 l.file_path,
                 l.cursor.row + 1,
                 l.cursor.col,
