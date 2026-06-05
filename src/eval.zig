@@ -21,6 +21,7 @@ const panic = std.debug.panic;
 
 const print = stdlib_pkg.print;
 const print_int = stdlib_pkg.print_int;
+const print_str = stdlib_pkg.print_str;
 
 // Because functions are meant to be fun to use :)
 const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -125,14 +126,22 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
+    var print_str_args: std.ArrayList([]const u8) = .empty;
+    try print_str_args.append(alloc, "str");
+    const print_str_fn: FnExpr = .{
+        .name = "print_str",
+        .args = print_str_args,
+        .body = .{ .fn_binding = .{ .fn_ = print_str } },
+    };
+
     var print_args: std.ArrayList([]const u8) = .empty;
     try print_args.append(alloc, "c");
-
     const print_fn: FnExpr = .{
         .name = "print",
         .args = print_args,
         .body = .{ .fn_binding = .{ .fn_ = print } },
     };
+
     var print_int_args: std.ArrayList([]const u8) = .empty;
     try print_int_args.append(alloc, "c");
     const print_int_fn: FnExpr = .{
@@ -140,6 +149,8 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
         .args = print_int_args,
         .body = .{ .fn_binding = .{ .fn_ = print_int } },
     };
+
+    try functions.put(alloc, "print_str", print_str_fn);
     try functions.put(alloc, "print", print_fn);
     try functions.put(alloc, "print_int", print_int_fn);
 
@@ -264,8 +275,12 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
         assert(arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
         const var_: Var = if (arg_eval.tag() == .bool_)
             .{ .bool_ = arg_eval.bool_.constant }
+        else if (arg_eval.tag() == .arith and arg_eval.arith.tag() == .constant)
+            .{ .int = arg_eval.arith.constant }
+        else if (arg_eval.tag() == .arith and arg_eval.arith.tag() == .str)
+            .{ .str = arg_eval.arith.str }
         else
-            .{ .int = arg_eval.arith.constant };
+            panic("unhandled case", .{});
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
     }
 
@@ -286,6 +301,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
         .bool_ => |var_| .{ .bool_ = .{ .constant = var_ } },
         .int => |var_| .{ .arith = .{ .constant = var_ } },
         .struct_instance => |var_| .{ .struct_instance = var_ },
+        .str => |var_| .{ .arith = .{ .str = var_ } },
     };
 }
 
@@ -317,7 +333,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars) Expr {
                 else => unreachable,
             };
         },
-        .str => |op| panic("eval_arith unimplemented for str: \"{s}\"", .{op}),
+        .str => |str| return .{ .arith = .{ .str = str } },
     }
 }
 
@@ -343,6 +359,7 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars) Expr {
 const VarTag = enum {
     int,
     bool_,
+    str,
     struct_instance,
 };
 
@@ -350,6 +367,7 @@ const Var = union(VarTag) {
     const Self = @This();
     int: i32,
     bool_: bool,
+    str: []const u8,
     struct_instance: StructInstanceExpr,
 
     pub fn tag(self: Self) VarTag {

@@ -30,6 +30,16 @@ pub fn print_int(vars: Vars) Expr {
     return .{ .void_ = {} };
 }
 
+pub fn print_str(vars: Vars) Expr {
+    assert(vars.count() == 1);
+    assert(vars.contains("str"));
+    const str = vars.get("str").?;
+
+    assert(str.tag() == .str);
+    std.debug.print("{s}", .{str.str});
+    return .{ .void_ = {} };
+}
+
 pub fn print_ascii(ascii: i32) void {
     assert(ascii < 128 and ascii >= 0);
 
