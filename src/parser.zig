@@ -72,7 +72,7 @@ pub const Parser = struct {
     /// can be an arith expr a + 1 - 3
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
-    fn parseBeginWithIdOrInt(l: *Lexer, alloc: Allocator) !Expr {
+    fn parseBeginWithIdOrIntOrBool(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.asStr(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
@@ -108,7 +108,10 @@ pub const Parser = struct {
         } else if (l.token == .str) {
             lhs.* = .{ .arith = .{ .str = l.name.asStr(l.content) } };
             l.nexti();
-        } else if (l.tokenType == .primary) panic("Must be identifier, integer or string", .{});
+        } else if (l.token == .bool_) {
+            lhs.* = .{ .bool_ = .{ .constant = l.bool_value.? } };
+            l.nexti();
+        } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
         while (l.tokenType == .arith_op or l.tokenType == .bool_op or l.token == .dot) {
             const op_token = l.token;
@@ -120,6 +123,8 @@ pub const Parser = struct {
             next_l.nexti();
 
             const current_name = l.name.asStr(l.content);
+            const int_value = l.integer_value;
+            const bool_value = l.bool_value;
 
             rhs.* = switch (l.token) {
                 .id => if (next_l.token == .oparen) blk: {
@@ -132,7 +137,11 @@ pub const Parser = struct {
                 },
                 .int => blk: {
                     l.nexti();
-                    break :blk .{ .arith = .{ .constant = l.integer_value.? } };
+                    break :blk .{ .arith = .{ .constant = int_value.? } };
+                },
+                .bool_ => blk: {
+                    l.nexti();
+                    break :blk .{ .bool_ = .{ .constant = bool_value.? } };
                 },
                 .str => blk: {
                     l.nexti();
@@ -240,8 +249,8 @@ pub const Parser = struct {
                 l.nexti();
                 return parseIf(l, alloc);
             },
-            .id, .int, .str => {
-                return parseBeginWithIdOrInt(l, alloc);
+            .id, .int, .bool_, .str => {
+                return parseBeginWithIdOrIntOrBool(l, alloc);
             },
             .self_fn => {
                 const name = l.name.asStr(l.content);
@@ -650,4 +659,32 @@ test "parse field access with dot" {
     const base_var = level_x.field_access.lhs.*;
     try expect(.var_, base_var.tag());
     try expectStrings("p", base_var.var_);
+}
+
+test "parse true == false" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ true == false;
+    ;
+    var lexer = Lexer.init(source_code, "test.zig");
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.list.items.len);
+
+    const eql_expr = expr.list.items[0];
+    try expect(.bool_, eql_expr.tag());
+    try expect(.eql, eql_expr.bool_.tag());
+
+    try expect(.bool_, eql_expr.bool_.eql.lhs.tag());
+    try expect(.constant, eql_expr.bool_.eql.lhs.bool_.tag());
+    try expect(true, eql_expr.bool_.eql.lhs.bool_.constant);
+
+    try expect(.bool_, eql_expr.bool_.eql.rhs.tag());
+    try expect(.constant, eql_expr.bool_.eql.rhs.bool_.tag());
+    try expect(false, eql_expr.bool_.eql.rhs.bool_.constant);
 }
