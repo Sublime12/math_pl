@@ -1,0 +1,5 @@
+bind x = true in
+if x then
+  print_str("bonjour is true",)
+else 
+  print_str("bonjour is false",);
