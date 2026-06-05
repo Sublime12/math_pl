@@ -4,12 +4,60 @@ const std = @import("std");
 const expression_pkg = @import("expression.zig");
 const eval_pkg = @import("eval.zig");
 
+const Allocator = std.mem.Allocator;
+
 const Expr = expression_pkg.Expr;
+const FnExpr = expression_pkg.FnExpr;
 const Vars = eval_pkg.Vars;
+const Funs = eval_pkg.Funs;
 
 const assert = std.debug.assert;
 
-pub fn print(vars: Vars) Expr {
+pub fn registerFunctions(alloc: Allocator, funs: *Funs) !void {
+    {
+        var print_args: std.ArrayList([]const u8) = .empty;
+        try print_args.append(alloc, "c");
+        const print_fn: FnExpr = .{
+            .name = "print",
+            .args = print_args,
+            .body = .{ .fn_binding = .{ .fn_ = print } },
+        };
+        try funs.put(alloc, "print", print_fn);
+    }
+    {
+        var print_int_args: std.ArrayList([]const u8) = .empty;
+        try print_int_args.append(alloc, "c");
+        const print_int_fn: FnExpr = .{
+            .name = "print_int",
+            .args = print_int_args,
+            .body = .{ .fn_binding = .{ .fn_ = print_int } },
+        };
+        try funs.put(alloc, "print_int", print_int_fn);
+    }
+    {
+        var print_str_args: std.ArrayList([]const u8) = .empty;
+        try print_str_args.append(alloc, "str");
+        const print_str_fn: FnExpr = .{
+            .name = "print_str",
+            .args = print_str_args,
+            .body = .{ .fn_binding = .{ .fn_ = print_str } },
+        };
+        try funs.put(alloc, "print_str", print_str_fn);
+    }
+    {
+        var getc_args: std.ArrayList([]const u8) = .empty;
+        try getc_args.append(alloc, "str");
+        try getc_args.append(alloc, "i");
+        const getc_fn: FnExpr = .{
+            .name = "getc",
+            .args = getc_args,
+            .body = .{ .fn_binding = .{ .fn_ = getc } },
+        };
+        try funs.put(alloc, "getc", getc_fn);
+    }
+}
+
+fn print(vars: Vars) Expr {
     // assert(vars.tag() == .arith and vars.arith.tag() == .constant);
     assert(vars.count() == 1);
     assert(vars.contains("c"));
@@ -20,7 +68,7 @@ pub fn print(vars: Vars) Expr {
     return .{ .void_ = {} };
 }
 
-pub fn print_int(vars: Vars) Expr {
+fn print_int(vars: Vars) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
@@ -30,7 +78,32 @@ pub fn print_int(vars: Vars) Expr {
     return .{ .void_ = {} };
 }
 
-pub fn print_ascii(ascii: i32) void {
+fn print_str(vars: Vars) Expr {
+    assert(vars.count() == 1);
+    assert(vars.contains("str"));
+    const str = vars.get("str").?;
+
+    assert(str.tag() == .str);
+    std.debug.print("{s}", .{str.str});
+    return .{ .void_ = {} };
+}
+
+fn getc(vars: Vars) Expr {
+    assert(vars.count() == 2);
+
+    assert(vars.contains("str"));
+    const str = vars.get("str").?;
+    assert(str.tag() == .str);
+
+    assert(vars.contains("i"));
+    const i = vars.get("i").?;
+    assert(i.tag() == .int);
+
+    assert(i.int < str.str.len);
+    return .{ .arith = .{ .constant = str.str[@intCast(i.int)] } };
+}
+
+fn print_ascii(ascii: i32) void {
     assert(ascii < 128 and ascii >= 0);
 
     const c: u8 = @intCast(ascii);

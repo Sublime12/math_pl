@@ -1,1 +1,1 @@
-""" Hello "Sucker" """;
+print_str(""" Hello "sub" """,);

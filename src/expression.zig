@@ -122,6 +122,11 @@ pub const Expr = union(ExprTag) {
         return self.arith.tag() == .constant;
     }
 
+    pub fn isStr(self: Self) bool {
+        if (self.tag() != .arith) return false;
+        return self.arith.tag() == .str;
+    }
+
     pub fn isBool(self: Self) bool {
         if (self.tag() != .bool_) return false;
         return self.bool_.tag() == .constant;
@@ -129,6 +134,10 @@ pub const Expr = union(ExprTag) {
 
     pub fn isStructInstance(self: Self) bool {
         return self.tag() == .struct_instance;
+    }
+
+    pub fn isVoid(self: Self) bool {
+        return self.tag() == .void_;
     }
 
     pub fn print(self: Self) void {

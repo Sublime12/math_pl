@@ -19,11 +19,10 @@ const BindExpr = expression_pkg.BindExpr;
 const assert = std.debug.assert;
 const panic = std.debug.panic;
 
-const print = stdlib_pkg.print;
-const print_int = stdlib_pkg.print_int;
+const registerFunctions = stdlib_pkg.registerFunctions;
 
 // Because functions are meant to be fun to use :)
-const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
+pub const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
 const Structs = std.StringArrayHashMapUnmanaged(StructExpr);
 const Context = struct {
     const Self = @This();
@@ -125,23 +124,8 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
-    var print_args: std.ArrayList([]const u8) = .empty;
-    try print_args.append(alloc, "c");
 
-    const print_fn: FnExpr = .{
-        .name = "print",
-        .args = print_args,
-        .body = .{ .fn_binding = .{ .fn_ = print } },
-    };
-    var print_int_args: std.ArrayList([]const u8) = .empty;
-    try print_int_args.append(alloc, "c");
-    const print_int_fn: FnExpr = .{
-        .name = "print_int",
-        .args = print_int_args,
-        .body = .{ .fn_binding = .{ .fn_ = print_int } },
-    };
-    try functions.put(alloc, "print", print_fn);
-    try functions.put(alloc, "print_int", print_int_fn);
+    try registerFunctions(alloc, &functions);
 
     var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
 
@@ -244,8 +228,12 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
             .{ .bool_ = ebody.bool_.constant }
         else if (ebody.isStructInstance())
             .{ .struct_instance = ebody.struct_instance }
+        else if (ebody.isStr())
+            .{ .str = ebody.arith.str }
+        else if (ebody.isVoid())
+            .{ .void_ = {} }
         else
-            panic("body must be evaluated of type int or bool", .{});
+            panic("body must be evaluated of type int or bool or struct_instance or str", .{});
 
     var bind_vars = local_vars.clone() catch unreachable;
     bind_vars.putNoClobber(id, body) catch unreachable;
@@ -256,6 +244,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
+    assert(fn_def.args.items.len == expr.args.items.len);
     var fn_params: Vars = .init(ctx.alloc);
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
@@ -264,8 +253,12 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
         assert(arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
         const var_: Var = if (arg_eval.tag() == .bool_)
             .{ .bool_ = arg_eval.bool_.constant }
+        else if (arg_eval.tag() == .arith and arg_eval.arith.tag() == .constant)
+            .{ .int = arg_eval.arith.constant }
+        else if (arg_eval.tag() == .arith and arg_eval.arith.tag() == .str)
+            .{ .str = arg_eval.arith.str }
         else
-            .{ .int = arg_eval.arith.constant };
+            panic("unhandled case", .{});
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
     }
 
@@ -286,6 +279,8 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
         .bool_ => |var_| .{ .bool_ = .{ .constant = var_ } },
         .int => |var_| .{ .arith = .{ .constant = var_ } },
         .struct_instance => |var_| .{ .struct_instance = var_ },
+        .str => |var_| .{ .arith = .{ .str = var_ } },
+        .void_ => .{ .void_ = {} },
     };
 }
 
@@ -317,7 +312,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars) Expr {
                 else => unreachable,
             };
         },
-        .str => |op| panic("eval_arith unimplemented for str: \"{s}\"", .{op}),
+        .str => |str| return .{ .arith = .{ .str = str } },
     }
 }
 
@@ -343,14 +338,18 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars) Expr {
 const VarTag = enum {
     int,
     bool_,
+    str,
     struct_instance,
+    void_,
 };
 
 const Var = union(VarTag) {
     const Self = @This();
     int: i32,
     bool_: bool,
+    str: []const u8,
     struct_instance: StructInstanceExpr,
+    void_: void,
 
     pub fn tag(self: Self) VarTag {
         return @as(VarTag, self);
