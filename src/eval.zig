@@ -20,10 +20,6 @@ const assert = std.debug.assert;
 const panic = std.debug.panic;
 
 const registerFunctions = stdlib_pkg.registerFunctions;
-// const print = stdlib_pkg.print;
-// const print_int = stdlib_pkg.print_int;
-// const print_str = stdlib_pkg.print_str;
-// const getc = stdlib_pkg.getc;
 
 // Because functions are meant to be fun to use :)
 pub const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -128,7 +124,7 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
             try functions.put(alloc, expr.fn_def.name, expr.fn_def);
         }
     }
-    
+
     try registerFunctions(alloc, &functions);
 
     var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
