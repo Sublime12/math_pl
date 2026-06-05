@@ -79,12 +79,11 @@ pub const Lexer = struct {
         const END_TAG = "\x1b[0m";
         if (l.token != expected) {
             const panic_line = l.current_line();
-            std.debug.print(GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}` found this `{s}`, name: {s}, in line{s}\n", .{
+            std.debug.print(GREEN_TAG ++ "{s}:{}:{}" ++ END_TAG ++ " expected this `{s}`, found: `{s}` in line{s}\n", .{
                 l.file_path,
                 l.cursor.row + 1,
                 l.cursor.col,
                 expected.getStrRepresention(),
-                l.token.getStrRepresention(),
                 l.name.asStr(l.content),
                 panic_line,
             });
@@ -435,7 +434,7 @@ const TokenKind = enum {
     end,
 
     pub fn getStrRepresention(token: Self) []const u8 {
-        return switch(token) {
+        return switch (token) {
             .eql => "==",
             .assign => "=",
             .minus => "-",
