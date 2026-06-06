@@ -105,7 +105,7 @@ pub const ExprTag = enum {
 
 pub const Expr = struct {
     as: ExprAs,
-    pos: ?Cursor = null,
+    cursor: ?Cursor = null,
     content: ?[]const u8 = null,
 };
 
