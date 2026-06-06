@@ -479,7 +479,7 @@ const TokenType = enum {
     none,
 };
 
-const Cursor = struct {
+pub const Cursor = struct {
     const Self = @This();
 
     // absolute position in str

@@ -1,7 +1,9 @@
 const std = @import("std");
 
 const eval_pkg = @import("eval.zig");
+const lexer_pkg = @import("lexer.zig");
 
+const Cursor = lexer_pkg.Cursor;
 const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
@@ -101,7 +103,13 @@ pub const ExprTag = enum {
     void_,
 };
 
-pub const Expr = union(ExprTag) {
+pub const Expr = struct {
+    as: ExprAs,
+    pos: ?Cursor = null,
+    content: ?[]const u8 = null,
+};
+
+const ExprAs = union(ExprTag) {
     const Self = @This();
 
     if_: IfExpr,

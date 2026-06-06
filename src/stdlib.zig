@@ -65,7 +65,7 @@ fn print(vars: Vars) Expr {
     assert(c.tag() == .int);
 
     print_ascii(c.int);
-    return .{ .void_ = {} };
+    return .{ .as = .{ .void_ = {} } };
 }
 
 fn print_int(vars: Vars) Expr {
@@ -75,7 +75,7 @@ fn print_int(vars: Vars) Expr {
 
     assert(c.tag() == .int);
     std.debug.print("{}", .{c.int});
-    return .{ .void_ = {} };
+    return .{ .as = .{ .void_ = {} } };
 }
 
 fn print_str(vars: Vars) Expr {
@@ -85,7 +85,7 @@ fn print_str(vars: Vars) Expr {
 
     assert(str.tag() == .str);
     std.debug.print("{s}", .{str.str});
-    return .{ .void_ = {} };
+    return .{ .as = .{ .void_ = {} } };
 }
 
 fn getc(vars: Vars) Expr {
@@ -100,7 +100,7 @@ fn getc(vars: Vars) Expr {
     assert(i.tag() == .int);
 
     assert(i.int < str.str.len);
-    return .{ .arith = .{ .constant = str.str[@intCast(i.int)] } };
+    return .{ .as = .{ .arith = .{ .constant = str.str[@intCast(i.int)] } } };
 }
 
 fn print_ascii(ascii: i32) void {
