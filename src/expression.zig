@@ -199,6 +199,24 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_bool(op: BoolExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .bool_ = op },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_list(program: std.ArrayList(Expr), l: *const Lexer) Expr {
+        return .{
+            .as = .{ .list = program },
+            .cursor = l.cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {

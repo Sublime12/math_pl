@@ -42,12 +42,7 @@ pub const Parser = struct {
             try program.append(self.alloc, expr);
             i += 1;
         }
-        return .{
-            .as = .{ .list = program },
-            .cursor = self.lexer.cursor,
-            .content = self.lexer.content,
-            .file_path = self.lexer.file_path,
-        };
+        return Expr.create_list(program, self.lexer);
     }
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
@@ -297,12 +292,7 @@ pub const Parser = struct {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{
-                    .as = .{ .bool_ = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_bool(op, l);
             },
             .arith_op => {
                 l.nexti();
