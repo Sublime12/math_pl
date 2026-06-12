@@ -18,14 +18,6 @@ pub const FnExpr = struct {
     args: std.ArrayList([]const u8),
     body: FnBody,
 
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
-        return .{
-            .name = name,
-            .args = args,
-            .body = FnBody.init(body),
-        };
-    }
-
     pub fn print(self: Self) void {
         std.debug.print("let {s} = fn ", .{self.name});
         for (self.args.items) |arg| {
