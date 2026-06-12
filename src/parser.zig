@@ -132,39 +132,19 @@ pub const Parser = struct {
                     break :blk expr;
                 } else blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .var_ = current_name },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_var(current_name, l);
                 },
                 .int => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .arith = .{ .constant = int_value.? } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_arith(.{ .constant = int_value.? }, l);
                 },
                 .bool_ => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .bool_ = .{ .constant = bool_value.? } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_bool(.{ .constant = bool_value.? }, l);
                 },
                 .str => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .arith = .{ .str = current_name } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_arith(.{ .str = current_name }, l);
                 },
                 else => blk: {
                     const expr = try parseExpr(l, alloc);
@@ -181,12 +161,7 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .arith = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = Expr.create_arith(op, l);
             } else if (op_token_type == .bool_op) {
                 const op: BoolExpr = switch (op_token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },

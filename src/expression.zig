@@ -236,7 +236,11 @@ pub const Expr = struct {
         };
     }
 
-    pub fn create_field_access(lhs_dot: *Expr, field: []const u8, l: *const Lexer,) Expr {
+    pub fn create_field_access(
+        lhs_dot: *Expr,
+        field: []const u8,
+        l: *const Lexer,
+    ) Expr {
         return .{
             .as = .{ .field_access = .{
                 .lhs = lhs_dot,
