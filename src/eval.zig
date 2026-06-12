@@ -32,6 +32,7 @@ const Context = struct {
     structs: Structs,
     alloc: Allocator,
     content: []const u8,
+    file_path: []const u8,
 
     pub fn print(self: Self) void {
         std.debug.print("defined structs: \n", .{});
@@ -120,7 +121,8 @@ fn contains(item: []const u8, values: std.ArrayList([]const u8)) bool {
 
 fn assertOfType(value: Expr, ok: bool) void {
     if (!ok) {
-        std.debug.print("\nruntime error in line: {}:{}\n", .{
+        std.debug.print("\n{s}:{}:{} runtime error\n", .{
+            value.file_path,
             value.cursor.row,
             value.cursor.col,
         });
@@ -128,7 +130,12 @@ fn assertOfType(value: Expr, ok: bool) void {
     }
 }
 
-pub fn buildContext(program: Expr, alloc: Allocator, content: []const u8) !Context {
+pub fn buildContext(
+    program: Expr,
+    alloc: Allocator,
+    content: []const u8,
+    file_path: []const u8,
+) !Context {
     assertOfType(program, program.as.tag() == .list);
     var functions: Funs = .empty;
     for (program.as.list.items) |expr| {
@@ -144,6 +151,7 @@ pub fn buildContext(program: Expr, alloc: Allocator, content: []const u8) !Conte
         .alloc = alloc,
         .structs = .empty,
         .content = content,
+        .file_path = file_path,
     };
 
     try add_structs(program, &ctx);
@@ -222,6 +230,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
                 .as = .{ .struct_instance = new_expr },
                 .content = ctx.content,
                 .cursor = expr.cursor,
+                .file_path = ctx.file_path,
             };
         },
         .field_access => |field_access| {
@@ -269,6 +278,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
         .as = .{ .fn_def = fn_def },
         .cursor = cursor,
         .content = ctx.content,
+        .file_path = ctx.file_path,
     }, fn_def.args.items.len == expr.args.items.len);
     var fn_params: Vars = .init(ctx.alloc);
     for (0..expr.args.items.len) |i| {
@@ -295,7 +305,11 @@ fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars, cursor: Cursor) Expr {
         .fn_std => |fn_std| eval(fn_std.body.*, ctx, fn_params),
         .fn_binding => |fn_binding| fn_binding.fn_(
             fn_params,
-            .{ .content = ctx.content, .cursor = cursor },
+            .{
+                .content = ctx.content,
+                .cursor = cursor,
+                .file_path = ctx.file_path,
+            },
         ),
     };
 }
@@ -307,26 +321,31 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Ex
             .as = .{ .bool_ = .{ .constant = var_ } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .int => |var_| .{
             .as = .{ .arith = .{ .constant = var_ } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .struct_instance => |var_| .{
             .as = .{ .struct_instance = var_ },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .str => |var_| .{
             .as = .{ .arith = .{ .str = var_ } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .void_ => .{
             .as = .{ .void_ = {} },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
     };
 }
@@ -347,6 +366,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
             .as = .{ .arith = .{ .constant = constant } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .prod, .minus, .plus => |op| {
             const lhs = eval(op.lhs.*, ctx, local_vars);
@@ -361,16 +381,19 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
                     .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } },
                     .content = ctx.content,
                     .cursor = cursor,
+                    .file_path = ctx.file_path,
                 },
                 .plus => .{
                     .as = .{ .arith = .{ .constant = lhs.as.arith.constant + rhs.as.arith.constant } },
                     .content = ctx.content,
                     .cursor = cursor,
+                    .file_path = ctx.file_path,
                 },
                 .minus => .{
                     .as = .{ .arith = .{ .constant = lhs.as.arith.constant - rhs.as.arith.constant } },
                     .content = ctx.content,
                     .cursor = cursor,
+                    .file_path = ctx.file_path,
                 },
                 else => unreachable,
             };
@@ -379,6 +402,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
             .as = .{ .arith = .{ .str = str } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
     }
 }
@@ -389,6 +413,7 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Exp
             .as = .{ .bool_ = .{ .constant = const_ } },
             .content = ctx.content,
             .cursor = cursor,
+            .file_path = ctx.file_path,
         },
         .eql => |eql_expr| {
             const lhs = eval(eql_expr.lhs.*, ctx, local_vars);
@@ -402,6 +427,7 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Exp
                 .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } },
                 .content = ctx.content,
                 .cursor = cursor,
+                .file_path = ctx.file_path,
             };
         },
         else => unreachable,

@@ -46,6 +46,7 @@ pub const Parser = struct {
             .as = .{ .list = program },
             .cursor = self.lexer.cursor,
             .content = self.lexer.content,
+            .file_path = self.lexer.file_path,
         };
     }
 
@@ -74,6 +75,7 @@ pub const Parser = struct {
             .as = .{ .fn_def = fn_expr },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
     }
 
@@ -100,18 +102,29 @@ pub const Parser = struct {
                     l.nexti();
 
                     const lhs_dot = try alloc.create(Expr);
-                    lhs_dot.* = .{ .as = .{ .var_ = name }, .cursor = l.previous_cursor, .content = l.content };
+                    lhs_dot.* = .{
+                        .as = .{ .var_ = name },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                     const expr: Expr = .{
                         .as = .{ .field_access = .{ .lhs = lhs_dot, .field = field } },
                         .cursor = l.previous_cursor,
                         .content = l.content,
+                        .file_path = l.file_path,
                     };
                     // l.nexti();
                     break :blk expr;
                 },
                 else => blk: {
                     l.nexti();
-                    break :blk .{ .as = .{ .var_ = name }, .cursor = l.previous_cursor, .content = l.content };
+                    break :blk .{
+                        .as = .{ .var_ = name },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
             };
         } else if (l.token == .int) {
@@ -119,6 +132,7 @@ pub const Parser = struct {
                 .as = .{ .arith = .{ .constant = l.integer_value.? } },
                 .cursor = l.previous_cursor,
                 .content = l.content,
+                .file_path = l.file_path,
             };
             l.nexti();
         } else if (l.token == .str) {
@@ -126,6 +140,7 @@ pub const Parser = struct {
                 .as = .{ .arith = .{ .str = l.name.asStr(l.content) } },
                 .cursor = l.previous_cursor,
                 .content = l.content,
+                .file_path = l.file_path,
             };
             l.nexti();
         } else if (l.token == .bool_) {
@@ -133,6 +148,7 @@ pub const Parser = struct {
                 .as = .{ .bool_ = .{ .constant = l.bool_value.? } },
                 .cursor = l.previous_cursor,
                 .content = l.content,
+                .file_path = l.file_path,
             };
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
@@ -161,6 +177,7 @@ pub const Parser = struct {
                         .as = .{ .var_ = current_name },
                         .cursor = l.previous_cursor,
                         .content = l.content,
+                        .file_path = l.file_path,
                     };
                 },
                 .int => blk: {
@@ -169,6 +186,7 @@ pub const Parser = struct {
                         .as = .{ .arith = .{ .constant = int_value.? } },
                         .cursor = l.previous_cursor,
                         .content = l.content,
+                        .file_path = l.file_path,
                     };
                 },
                 .bool_ => blk: {
@@ -177,6 +195,7 @@ pub const Parser = struct {
                         .as = .{ .bool_ = .{ .constant = bool_value.? } },
                         .cursor = l.previous_cursor,
                         .content = l.content,
+                        .file_path = l.file_path,
                     };
                 },
                 .str => blk: {
@@ -185,6 +204,7 @@ pub const Parser = struct {
                         .as = .{ .arith = .{ .str = current_name } },
                         .cursor = l.previous_cursor,
                         .content = l.content,
+                        .file_path = l.file_path,
                     };
                 },
                 else => blk: {
@@ -206,6 +226,7 @@ pub const Parser = struct {
                     .as = .{ .arith = op },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             } else if (op_token_type == .bool_op) {
                 const op: BoolExpr = switch (op_token) {
@@ -218,6 +239,7 @@ pub const Parser = struct {
                     .as = .{ .bool_ = op },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             } else if (op_token == .dot) {
                 const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.as.var_ };
@@ -226,6 +248,7 @@ pub const Parser = struct {
                     .as = .{ .field_access = op },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             }
         }
@@ -241,6 +264,7 @@ pub const Parser = struct {
             .as = .{ .fn_call = .{ .name = name, .args = args } },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
         return lhs;
     }
@@ -277,6 +301,7 @@ pub const Parser = struct {
                     .as = .{ .bool_ = op },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             },
             .arith_op => {
@@ -295,6 +320,7 @@ pub const Parser = struct {
                     .as = .{ .arith = op },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             },
             else => {},
@@ -326,6 +352,7 @@ pub const Parser = struct {
                     .as = .{ .fn_call = .{ .name = name, .args = args } },
                     .cursor = l.previous_cursor,
                     .content = l.content,
+                    .file_path = l.file_path,
                 };
             },
             // an open paren (not in the context of a function)
@@ -377,6 +404,7 @@ pub const Parser = struct {
             .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
     }
 
@@ -401,6 +429,7 @@ pub const Parser = struct {
             .as = .{ .struct_ = .{ .name = struct_name, .fields = fields } },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
     }
 
@@ -425,6 +454,7 @@ pub const Parser = struct {
             } },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
     }
 
@@ -448,6 +478,7 @@ pub const Parser = struct {
             },
             .cursor = l.previous_cursor,
             .content = l.content,
+            .file_path = l.file_path,
         };
     }
 

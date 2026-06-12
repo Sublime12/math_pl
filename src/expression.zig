@@ -71,6 +71,7 @@ pub const FnBody = union(FnExprTag) {
 pub const Context = struct {
     cursor: Cursor,
     content: []const u8,
+    file_path: []const u8,
 };
 
 pub const FnBindingExpr = struct {
@@ -112,6 +113,7 @@ pub const Expr = struct {
     as: ExprAs,
     cursor: Cursor,
     content: []const u8,
+    file_path: []const u8,
 };
 
 const ExprAs = union(ExprTag) {

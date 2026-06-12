@@ -69,6 +69,7 @@ fn print(vars: Vars, ctx: FnCallCtx) Expr {
         .as = .{ .void_ = {} },
         .cursor = ctx.cursor,
         .content = ctx.content,
+        .file_path = ctx.file_path,
     };
 }
 
@@ -83,6 +84,7 @@ fn print_int(vars: Vars, ctx: FnCallCtx) Expr {
         .as = .{ .void_ = {} },
         .cursor = ctx.cursor,
         .content = ctx.content,
+        .file_path = ctx.file_path,
     };
 }
 
@@ -97,6 +99,7 @@ fn print_str(vars: Vars, ctx: FnCallCtx) Expr {
         .as = .{ .void_ = {} },
         .cursor = ctx.cursor,
         .content = ctx.content,
+        .file_path = ctx.file_path,
     };
 }
 
@@ -116,6 +119,7 @@ fn getc(vars: Vars, ctx: FnCallCtx) Expr {
         .as = .{ .arith = .{ .constant = str.str[@intCast(i.int)] } },
         .cursor = ctx.cursor,
         .content = ctx.content,
+        .file_path = ctx.file_path,
     };
 }
 
