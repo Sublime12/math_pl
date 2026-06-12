@@ -468,18 +468,20 @@ pub const Parser = struct {
         const else_ = try alloc.create(Expr);
         else_.* = try parseExpr(l, alloc);
 
-        return .{
-            .as = .{
-                .if_ = .{
-                    .eval = eval,
-                    .then = then,
-                    .else_ = else_,
-                },
-            },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        return Expr.create_if(eval, then, else_, l);
+
+        // return .{
+        //     .as = .{
+        //         .if_ = .{
+        //             .eval = eval,
+        //             .then = then,
+        //             .else_ = else_,
+        //         },
+        //     },
+        //     .cursor = l.previous_cursor,
+        //     .content = l.content,
+        //     .file_path = l.file_path,
+        // };
     }
 
     fn parseBool(l: *Lexer, alloc: Allocator) !Expr {

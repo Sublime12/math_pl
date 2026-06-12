@@ -1,9 +1,11 @@
 const std = @import("std");
 
+
 const eval_pkg = @import("eval.zig");
 const lexer_pkg = @import("lexer.zig");
 
 const Cursor = lexer_pkg.Cursor;
+const Lexer = lexer_pkg.Lexer;
 const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
@@ -114,6 +116,21 @@ pub const Expr = struct {
     cursor: Cursor,
     content: []const u8,
     file_path: []const u8,
+
+    pub fn create_if(eval: *Expr, then: *Expr, else_: *Expr, l: *const Lexer) Expr {
+        return .{
+            .as = .{
+                .if_ = .{
+                    .eval = eval,
+                    .then = then,
+                    .else_ = else_,
+                },
+            },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
