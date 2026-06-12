@@ -400,12 +400,7 @@ pub const Parser = struct {
             try fields.putNoClobber(alloc, field, value);
         }
         l.nexti();
-        return .{
-            .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        return Expr.create_struct_instance(name, fields, l);
     }
 
     fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {

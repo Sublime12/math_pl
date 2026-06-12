@@ -164,6 +164,19 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_struct_instance(
+        name: []const u8,
+        fields: std.StringHashMapUnmanaged(Expr),
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
