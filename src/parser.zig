@@ -446,16 +446,8 @@ pub const Parser = struct {
 
         const closure = try alloc.create(Expr);
         closure.* = try parseExpr(l, alloc);
-        return .{
-            .as = .{ .bind = .{
-                .id = id,
-                .body = body,
-                .closure = closure,
-            } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+
+        return Expr.create_bind(id, body, closure, l);
     }
 
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {

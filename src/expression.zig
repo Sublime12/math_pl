@@ -1,6 +1,5 @@
 const std = @import("std");
 
-
 const eval_pkg = @import("eval.zig");
 const lexer_pkg = @import("lexer.zig");
 
@@ -126,6 +125,24 @@ pub const Expr = struct {
                     .else_ = else_,
                 },
             },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_bind(
+        id: []const u8,
+        body: *Expr,
+        closure: *Expr,
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .bind = .{
+                .id = id,
+                .body = body,
+                .closure = closure,
+            } },
             .cursor = l.previous_cursor,
             .content = l.content,
             .file_path = l.file_path,
