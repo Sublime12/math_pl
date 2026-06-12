@@ -217,6 +217,15 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_fn_def(fn_expr: FnExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .fn_def = fn_expr },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {

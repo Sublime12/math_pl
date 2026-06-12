@@ -66,12 +66,7 @@ pub const Parser = struct {
             .args = args,
             .body = .{ .fn_std = .{ .body = body } },
         };
-        return .{
-            .as = .{ .fn_def = fn_expr },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        return Expr.create_fn_def(fn_expr, l);
     }
 
     /// can be an arith expr a + 1 - 3
