@@ -425,12 +425,8 @@ pub const Parser = struct {
         }
 
         l.eat(.cbrace);
-        return .{
-            .as = .{ .struct_ = .{ .name = struct_name, .fields = fields } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+
+        return Expr.create_struct(struct_name, fields, l);
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {

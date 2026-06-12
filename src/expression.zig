@@ -148,6 +148,22 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_struct(
+        name: []const u8,
+        fields: std.ArrayList([]const u8),
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .struct_ = .{
+                .name = name,
+                .fields = fields,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
