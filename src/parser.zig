@@ -169,21 +169,12 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .bool_ = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = Expr.create_bool(op, l);
             } else if (op_token == .dot) {
-                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.as.var_ };
+                const field = rhs.as.var_;
+                const field_access_expr = Expr.create_field_access(lhs, field, l);
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .field_access = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = field_access_expr;
             }
         }
 
@@ -194,13 +185,7 @@ pub const Parser = struct {
         l.eat(.oparen);
         const args = try parseArgs(l, alloc);
         l.eat(.cparen);
-        const lhs: Expr = .{
-            .as = .{ .fn_call = .{ .name = name, .args = args } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
-        return lhs;
+        return Expr.create_fn_call(name, args, l);
     }
 
     pub fn parseArgs(l: *Lexer, alloc: Allocator) !ArgsExpr {
