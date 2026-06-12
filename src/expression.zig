@@ -269,26 +269,26 @@ const ExprAs = union(ExprTag) {
     field_access: FieldAccessExpr,
     void_: void,
 
-    pub fn isInt(self: Self) bool {
+    pub fn is_int(self: Self) bool {
         if (self.tag() != .arith) return false;
         return self.arith.tag() == .constant;
     }
 
-    pub fn isStr(self: Self) bool {
+    pub fn is_str(self: Self) bool {
         if (self.tag() != .arith) return false;
         return self.arith.tag() == .str;
     }
 
-    pub fn isBool(self: Self) bool {
+    pub fn is_bool(self: Self) bool {
         if (self.tag() != .bool_) return false;
         return self.bool_.tag() == .constant;
     }
 
-    pub fn isStructInstance(self: Self) bool {
+    pub fn is_struct_instance(self: Self) bool {
         return self.tag() == .struct_instance;
     }
 
-    pub fn isVoid(self: Self) bool {
+    pub fn is_void(self: Self) bool {
         return self.tag() == .void_;
     }
 

@@ -46,7 +46,7 @@ const Context = struct {
     }
 };
 
-pub fn semAnal(program: Expr, ctx: Context) void {
+pub fn sema(program: Expr, ctx: Context) void {
     switch (program.as) {
         // base case
         .struct_instance => |struct_inst| {
@@ -67,8 +67,8 @@ pub fn semAnal(program: Expr, ctx: Context) void {
         .arith => |arith_expr| {
             switch (arith_expr) {
                 .plus, .minus, .prod => |expr| {
-                    semAnal(expr.lhs.*, ctx);
-                    semAnal(expr.rhs.*, ctx);
+                    sema(expr.lhs.*, ctx);
+                    sema(expr.rhs.*, ctx);
                 },
                 .constant, .str => {},
             }
@@ -76,37 +76,37 @@ pub fn semAnal(program: Expr, ctx: Context) void {
         .bool_ => |bool_expr| {
             switch (bool_expr) {
                 .eql, .gt, .lt => |expr| {
-                    semAnal(expr.lhs.*, ctx);
-                    semAnal(expr.rhs.*, ctx);
+                    sema(expr.lhs.*, ctx);
+                    sema(expr.rhs.*, ctx);
                 },
                 .constant => {},
             }
         },
         .bind => |bind_expr| {
-            semAnal(bind_expr.body.*, ctx);
-            semAnal(bind_expr.closure.*, ctx);
+            sema(bind_expr.body.*, ctx);
+            sema(bind_expr.closure.*, ctx);
         },
-        .field_access => |field_expr| semAnal(field_expr.lhs.*, ctx),
+        .field_access => |field_expr| sema(field_expr.lhs.*, ctx),
         .fn_call => |fn_call_expr| {
             for (fn_call_expr.args.items) |arg| {
-                semAnal(arg, ctx);
+                sema(arg, ctx);
             }
         },
         .fn_def => |fn_def_expr| {
             switch (fn_def_expr.body) {
-                .fn_std => |fn_std| semAnal(fn_std.body.*, ctx),
+                .fn_std => |fn_std| sema(fn_std.body.*, ctx),
                 .fn_binding => {},
             }
         },
         .list => |list_expr| {
             for (list_expr.items) |sub_expr| {
-                semAnal(sub_expr, ctx);
+                sema(sub_expr, ctx);
             }
         },
         .if_ => |if_expr| {
-            semAnal(if_expr.eval.*, ctx);
-            semAnal(if_expr.then.*, ctx);
-            semAnal(if_expr.else_.*, ctx);
+            sema(if_expr.eval.*, ctx);
+            sema(if_expr.then.*, ctx);
+            sema(if_expr.else_.*, ctx);
         },
         .struct_, .var_, .void_ => {},
     }
@@ -130,7 +130,7 @@ fn assert_of_type(value: Expr, ok: bool) void {
     }
 }
 
-pub fn buildContext(
+pub fn build_context(
     program: Expr,
     alloc: Allocator,
     content: []const u8,
@@ -252,15 +252,15 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
     const id = bind.id;
     const ebody = eval(bind.body.*, ctx, local_vars);
     const body: Var =
-        if (ebody.as.isInt())
+        if (ebody.as.is_int())
             .{ .int = ebody.as.arith.constant }
-        else if (ebody.as.isBool())
+        else if (ebody.as.is_bool())
             .{ .bool_ = ebody.as.bool_.constant }
-        else if (ebody.as.isStructInstance())
+        else if (ebody.as.is_struct_instance())
             .{ .struct_instance = ebody.as.struct_instance }
-        else if (ebody.as.isStr())
+        else if (ebody.as.is_str())
             .{ .str = ebody.as.arith.str }
-        else if (ebody.as.isVoid())
+        else if (ebody.as.is_void())
             .{ .void_ = {} }
         else
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
