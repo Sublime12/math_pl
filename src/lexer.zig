@@ -42,6 +42,7 @@ pub const Lexer = struct {
     tokenType: TokenType,
     integer_value: ?i32,
     bool_value: ?bool,
+    previous_cursor: Cursor,
     cursor: Cursor,
     name: SliceId,
 
@@ -51,6 +52,7 @@ pub const Lexer = struct {
             .content = content,
             .token = .none,
             .cursor = .empty,
+            .previous_cursor = .empty,
             .name = .empty,
             .integer_value = null,
             .bool_value = null,
@@ -150,6 +152,7 @@ pub const Lexer = struct {
     }
 
     pub fn next(l: *Lexer) bool {
+        l.previous_cursor = l.cursor;
         l.trim_left();
 
         const x_opt = l.next_char();

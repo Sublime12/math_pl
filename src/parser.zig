@@ -72,7 +72,7 @@ pub const Parser = struct {
         };
         return .{
             .as = .{ .fn_def = fn_expr },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
     }
@@ -100,10 +100,10 @@ pub const Parser = struct {
                     l.nexti();
 
                     const lhs_dot = try alloc.create(Expr);
-                    lhs_dot.* = .{ .as = .{ .var_ = name }, .cursor = l.cursor, .content = l.content };
+                    lhs_dot.* = .{ .as = .{ .var_ = name }, .cursor = l.previous_cursor, .content = l.content };
                     const expr: Expr = .{
                         .as = .{ .field_access = .{ .lhs = lhs_dot, .field = field } },
-                        .cursor = l.cursor,
+                        .cursor = l.previous_cursor,
                         .content = l.content,
                     };
                     // l.nexti();
@@ -111,27 +111,27 @@ pub const Parser = struct {
                 },
                 else => blk: {
                     l.nexti();
-                    break :blk .{ .as = .{ .var_ = name }, .cursor = l.cursor, .content = l.content };
+                    break :blk .{ .as = .{ .var_ = name }, .cursor = l.previous_cursor, .content = l.content };
                 },
             };
         } else if (l.token == .int) {
             lhs.* = .{
                 .as = .{ .arith = .{ .constant = l.integer_value.? } },
-                .cursor = l.cursor,
+                .cursor = l.previous_cursor,
                 .content = l.content,
             };
             l.nexti();
         } else if (l.token == .str) {
             lhs.* = .{
                 .as = .{ .arith = .{ .str = l.name.asStr(l.content) } },
-                .cursor = l.cursor,
+                .cursor = l.previous_cursor,
                 .content = l.content,
             };
             l.nexti();
         } else if (l.token == .bool_) {
             lhs.* = .{
                 .as = .{ .bool_ = .{ .constant = l.bool_value.? } },
-                .cursor = l.cursor,
+                .cursor = l.previous_cursor,
                 .content = l.content,
             };
             l.nexti();
@@ -159,7 +159,7 @@ pub const Parser = struct {
                     l.nexti();
                     break :blk .{
                         .as = .{ .var_ = current_name },
-                        .cursor = l.cursor,
+                        .cursor = l.previous_cursor,
                         .content = l.content,
                     };
                 },
@@ -167,19 +167,23 @@ pub const Parser = struct {
                     l.nexti();
                     break :blk .{
                         .as = .{ .arith = .{ .constant = int_value.? } },
-                        .cursor = l.cursor,
+                        .cursor = l.previous_cursor,
                         .content = l.content,
                     };
                 },
                 .bool_ => blk: {
                     l.nexti();
-                    break :blk .{ .as = .{ .bool_ = .{ .constant = bool_value.? } }, .cursor = l.cursor, .content = l.content, };
+                    break :blk .{
+                        .as = .{ .bool_ = .{ .constant = bool_value.? } },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                    };
                 },
                 .str => blk: {
                     l.nexti();
                     break :blk .{
                         .as = .{ .arith = .{ .str = current_name } },
-                        .cursor = l.cursor,
+                        .cursor = l.previous_cursor,
                         .content = l.content,
                     };
                 },
@@ -200,7 +204,7 @@ pub const Parser = struct {
                 lhs = try alloc.create(Expr);
                 lhs.* = .{
                     .as = .{ .arith = op },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             } else if (op_token_type == .bool_op) {
@@ -212,7 +216,7 @@ pub const Parser = struct {
                 lhs = try alloc.create(Expr);
                 lhs.* = .{
                     .as = .{ .bool_ = op },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             } else if (op_token == .dot) {
@@ -220,7 +224,7 @@ pub const Parser = struct {
                 lhs = try alloc.create(Expr);
                 lhs.* = .{
                     .as = .{ .field_access = op },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             }
@@ -235,7 +239,7 @@ pub const Parser = struct {
         l.eat(.cparen);
         const lhs: Expr = .{
             .as = .{ .fn_call = .{ .name = name, .args = args } },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
         return lhs;
@@ -271,7 +275,7 @@ pub const Parser = struct {
                 };
                 return .{
                     .as = .{ .bool_ = op },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             },
@@ -289,7 +293,7 @@ pub const Parser = struct {
                 };
                 return .{
                     .as = .{ .arith = op },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             },
@@ -320,7 +324,7 @@ pub const Parser = struct {
                 l.eat(.cparen);
                 return .{
                     .as = .{ .fn_call = .{ .name = name, .args = args } },
-                    .cursor = l.cursor,
+                    .cursor = l.previous_cursor,
                     .content = l.content,
                 };
             },
@@ -371,7 +375,7 @@ pub const Parser = struct {
         l.nexti();
         return .{
             .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
     }
@@ -395,7 +399,7 @@ pub const Parser = struct {
         l.eat(.cbrace);
         return .{
             .as = .{ .struct_ = .{ .name = struct_name, .fields = fields } },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
     }
@@ -419,7 +423,7 @@ pub const Parser = struct {
                 .body = body,
                 .closure = closure,
             } },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
     }
@@ -442,7 +446,7 @@ pub const Parser = struct {
                     .else_ = else_,
                 },
             },
-            .cursor = l.cursor,
+            .cursor = l.previous_cursor,
             .content = l.content,
         };
     }

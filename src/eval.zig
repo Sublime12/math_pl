@@ -2,9 +2,11 @@ const std = @import("std");
 
 const expression_pkg = @import("expression.zig");
 const stdlib_pkg = @import("stdlib.zig");
+const lexer_pkg = @import("lexer.zig");
 
 const Allocator = std.mem.Allocator;
 
+const Cursor = lexer_pkg.Cursor;
 const Expr = expression_pkg.Expr;
 const ExprTag = expression_pkg.ExprTag;
 const BoolExpr = expression_pkg.BoolExpr;
@@ -16,7 +18,6 @@ const StructExpr = expression_pkg.StructExpr;
 const StructInstanceExpr = expression_pkg.StructInstanceExpr;
 const BindExpr = expression_pkg.BindExpr;
 
-const assert = std.debug.assert;
 const panic = std.debug.panic;
 
 const registerFunctions = stdlib_pkg.registerFunctions;
@@ -30,6 +31,7 @@ const Context = struct {
     funs: Funs,
     structs: Structs,
     alloc: Allocator,
+    content: []const u8,
 
     pub fn print(self: Self) void {
         std.debug.print("defined structs: \n", .{});
@@ -116,8 +118,18 @@ fn contains(item: []const u8, values: std.ArrayList([]const u8)) bool {
     return false;
 }
 
-pub fn buildContext(program: Expr, alloc: Allocator) !Context {
-    assert(program.as.tag() == .list);
+fn assertOfType(value: Expr, ok: bool) void {
+    if (!ok) {
+        std.debug.print("\nruntime error in line: {}:{}\n", .{
+            value.cursor.row,
+            value.cursor.col,
+        });
+        std.process.exit(1);
+    }
+}
+
+pub fn buildContext(program: Expr, alloc: Allocator, content: []const u8) !Context {
+    assertOfType(program, program.as.tag() == .list);
     var functions: Funs = .empty;
     for (program.as.list.items) |expr| {
         if (expr.as.tag() == .fn_def) {
@@ -127,7 +139,12 @@ pub fn buildContext(program: Expr, alloc: Allocator) !Context {
 
     try registerFunctions(alloc, &functions);
 
-    var ctx: Context = .{ .funs = functions, .alloc = alloc, .structs = .empty };
+    var ctx: Context = .{
+        .funs = functions,
+        .alloc = alloc,
+        .structs = .empty,
+        .content = content,
+    };
 
     try add_structs(program, &ctx);
     return ctx;
@@ -170,19 +187,19 @@ fn add_structs(program: Expr, ctx: *Context) !void {
 pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
     switch (expr.as) {
         .bool_ => |bool_| {
-            return eval_bool(bool_, ctx, local_vars);
+            return eval_bool(bool_, ctx, local_vars, expr.cursor);
         },
         .arith => |arith| {
-            return eval_arith(arith, ctx, local_vars);
+            return eval_arith(arith, ctx, local_vars, expr.cursor);
         },
         .if_ => |if_| {
             return eval_if(if_, ctx, local_vars);
         },
         .var_ => |var_| {
-            return eval_var(var_, ctx, local_vars);
+            return eval_var(var_, ctx, local_vars, expr.cursor);
         },
         .fn_call => |fn_call| {
-            return eval_fn_call(fn_call, ctx, local_vars);
+            return eval_fn_call(fn_call, ctx, local_vars, expr.cursor);
         },
         .fn_def => return expr,
         .list => |list| {
@@ -201,11 +218,15 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
                 const efield = eval(inst_field.value_ptr.*, ctx, local_vars);
                 new_expr.fields.putNoClobber(ctx.alloc, inst_field.key_ptr.*, efield) catch unreachable;
             }
-            return .{ .as = .{ .struct_instance = new_expr } };
+            return .{
+                .as = .{ .struct_instance = new_expr },
+                .content = ctx.content,
+                .cursor = expr.cursor,
+            };
         },
         .field_access => |field_access| {
             const elhs = eval(field_access.lhs.*, ctx, local_vars);
-            assert(elhs.as.tag() == .struct_instance);
+            assertOfType(elhs, elhs.as.tag() == .struct_instance);
             return elhs.as.struct_instance.fields.get(field_access.field) orelse {
                 panic("tried accessing {s} in struct {s} but do not exist", .{
                     field_access.field,
@@ -240,17 +261,21 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
     return eval(bind.closure.*, ctx, bind_vars);
 }
 
-fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
+fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
-    assert(fn_def.args.items.len == expr.args.items.len);
+    assertOfType(.{
+        .as = .{ .fn_def = fn_def },
+        .cursor = cursor,
+        .content = ctx.content,
+    }, fn_def.args.items.len == expr.args.items.len);
     var fn_params: Vars = .init(ctx.alloc);
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
         const arg_eval = eval(arg, ctx, local_vars);
-        assert(arg_eval.as.tag() == .bool_ or arg_eval.as.tag() == .arith);
+        assertOfType(arg_eval, arg_eval.as.tag() == .bool_ or arg_eval.as.tag() == .arith);
         const var_: Var = if (arg_eval.as.tag() == .bool_)
             .{ .bool_ = arg_eval.as.bool_.constant }
         else if (arg_eval.as.tag() == .arith and arg_eval.as.arith.tag() == .constant)
@@ -262,74 +287,122 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars) Expr {
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
     }
 
-    return eval_fn(fn_def, ctx, fn_params);
+    return eval_fn(fn_def, ctx, fn_params, cursor);
 }
 
-fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars) Expr {
+fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars, cursor: Cursor) Expr {
     return switch (fn_def.body) {
         .fn_std => |fn_std| eval(fn_std.body.*, ctx, fn_params),
-        .fn_binding => |fn_binding| fn_binding.fn_(fn_params),
+        .fn_binding => |fn_binding| fn_binding.fn_(
+            fn_params,
+            .{ .content = ctx.content, .cursor = cursor },
+        ),
     };
 }
 
-fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars) Expr {
-    _ = ctx;
+fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
     const value = local_vars.get(expr) orelse panic("var {s} not in context", .{expr});
     return switch (value) {
-        .bool_ => |var_| .{ .as = .{ .bool_ = .{ .constant = var_ } } },
-        .int => |var_| .{ .as = .{ .arith = .{ .constant = var_ } } },
-        .struct_instance => |var_| .{ .as = .{ .struct_instance = var_ } },
-        .str => |var_| .{ .as = .{ .arith = .{ .str = var_ } } },
-        .void_ => .{ .as = .{ .void_ = {} } },
+        .bool_ => |var_| .{
+            .as = .{ .bool_ = .{ .constant = var_ } },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
+        .int => |var_| .{
+            .as = .{ .arith = .{ .constant = var_ } },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
+        .struct_instance => |var_| .{
+            .as = .{ .struct_instance = var_ },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
+        .str => |var_| .{
+            .as = .{ .arith = .{ .str = var_ } },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
+        .void_ => .{
+            .as = .{ .void_ = {} },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
     };
 }
 
 fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     const cond = eval(expr.eval.*, ctx, local_vars);
-    assert(cond.as.tag() == .bool_);
-    assert(cond.as.bool_.tag() == .constant);
+    assertOfType(cond, cond.as.tag() == .bool_);
+    assertOfType(cond, cond.as.bool_.tag() == .constant);
     return if (cond.as.bool_.constant)
         eval(expr.then.*, ctx, local_vars)
     else
         eval(expr.else_.*, ctx, local_vars);
 }
 
-fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars) Expr {
+fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
     switch (expr) {
-        .constant => |constant| return .{ .as = .{ .arith = .{ .constant = constant } } },
+        .constant => |constant| return .{
+            .as = .{ .arith = .{ .constant = constant } },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
         .prod, .minus, .plus => |op| {
             const lhs = eval(op.lhs.*, ctx, local_vars);
             const rhs = eval(op.rhs.*, ctx, local_vars);
 
-            assert(lhs.as.tag() == .arith);
-            assert(rhs.as.tag() == .arith);
-            assert(lhs.as.arith == .constant);
-            assert(rhs.as.arith == .constant);
+            assertOfType(lhs, lhs.as.tag() == .arith);
+            assertOfType(rhs, rhs.as.tag() == .arith);
+            assertOfType(lhs, lhs.as.arith == .constant);
+            assertOfType(rhs, rhs.as.arith == .constant);
             return switch (expr) {
-                .prod => .{ .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } } },
-                .plus => .{ .as = .{ .arith = .{ .constant = lhs.as.arith.constant + rhs.as.arith.constant } } },
-                .minus => .{ .as = .{ .arith = .{ .constant = lhs.as.arith.constant - rhs.as.arith.constant } } },
+                .prod => .{
+                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } },
+                    .content = ctx.content,
+                    .cursor = cursor,
+                },
+                .plus => .{
+                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant + rhs.as.arith.constant } },
+                    .content = ctx.content,
+                    .cursor = cursor,
+                },
+                .minus => .{
+                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant - rhs.as.arith.constant } },
+                    .content = ctx.content,
+                    .cursor = cursor,
+                },
                 else => unreachable,
             };
         },
         .str => |str| return .{
             .as = .{ .arith = .{ .str = str } },
+            .content = ctx.content,
+            .cursor = cursor,
         },
     }
 }
 
-fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars) Expr {
+fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
     switch (expr) {
-        .constant => |const_| return .{ .as = .{ .bool_ = .{ .constant = const_ } } },
+        .constant => |const_| return .{
+            .as = .{ .bool_ = .{ .constant = const_ } },
+            .content = ctx.content,
+            .cursor = cursor,
+        },
         .eql => |eql_expr| {
             const lhs = eval(eql_expr.lhs.*, ctx, local_vars);
             const rhs = eval(eql_expr.rhs.*, ctx, local_vars);
 
-            assert(lhs.as.tag() == .bool_ or lhs.as.tag() == .arith);
-            assert(rhs.as.tag() == .bool_ or rhs.as.tag() == .arith);
-            assert(lhs.as.tag() == rhs.as.tag());
+            assertOfType(lhs, lhs.as.tag() == .bool_ or lhs.as.tag() == .arith);
+            assertOfType(rhs, rhs.as.tag() == .bool_ or rhs.as.tag() == .arith);
+            assertOfType(lhs, lhs.as.tag() == rhs.as.tag());
 
-            return .{ .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } } };
+            return .{
+                .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } },
+                .content = ctx.content,
+                .cursor = cursor,
+            };
         },
         else => unreachable,
     }

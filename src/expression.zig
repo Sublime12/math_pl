@@ -68,8 +68,13 @@ pub const FnBody = union(FnExprTag) {
     }
 };
 
+pub const Context = struct {
+    cursor: Cursor,
+    content: []const u8,
+};
+
 pub const FnBindingExpr = struct {
-    fn_: *const fn (args: Vars) Expr,
+    fn_: *const fn (args: Vars, call_ctx: Context) Expr,
 };
 
 pub const FnStdExpr = struct {
@@ -105,8 +110,8 @@ pub const ExprTag = enum {
 
 pub const Expr = struct {
     as: ExprAs,
-    cursor: ?Cursor = null,
-    content: ?[]const u8 = null,
+    cursor: Cursor,
+    content: []const u8,
 };
 
 const ExprAs = union(ExprTag) {

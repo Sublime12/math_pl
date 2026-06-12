@@ -10,6 +10,7 @@ const Expr = expression_pkg.Expr;
 const FnExpr = expression_pkg.FnExpr;
 const Vars = eval_pkg.Vars;
 const Funs = eval_pkg.Funs;
+const FnCallCtx = expression_pkg.Context;
 
 const assert = std.debug.assert;
 
@@ -57,38 +58,49 @@ pub fn registerFunctions(alloc: Allocator, funs: *Funs) !void {
     }
 }
 
-fn print(vars: Vars) Expr {
-    // assert(vars.tag() == .arith and vars.arith.tag() == .constant);
+fn print(vars: Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
     assert(c.tag() == .int);
 
     print_ascii(c.int);
-    return .{ .as = .{ .void_ = {} } };
+    return .{
+        .as = .{ .void_ = {} },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+    };
 }
 
-fn print_int(vars: Vars) Expr {
+fn print_int(vars: Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
 
     assert(c.tag() == .int);
     std.debug.print("{}", .{c.int});
-    return .{ .as = .{ .void_ = {} } };
+    return .{
+        .as = .{ .void_ = {} },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+    };
 }
 
-fn print_str(vars: Vars) Expr {
+fn print_str(vars: Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("str"));
     const str = vars.get("str").?;
 
     assert(str.tag() == .str);
     std.debug.print("{s}", .{str.str});
-    return .{ .as = .{ .void_ = {} } };
+    return .{
+        .as = .{ .void_ = {} },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+    };
 }
 
-fn getc(vars: Vars) Expr {
+fn getc(vars: Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 2);
 
     assert(vars.contains("str"));
@@ -100,7 +112,11 @@ fn getc(vars: Vars) Expr {
     assert(i.tag() == .int);
 
     assert(i.int < str.str.len);
-    return .{ .as = .{ .arith = .{ .constant = str.str[@intCast(i.int)] } } };
+    return .{
+        .as = .{ .arith = .{ .constant = str.str[@intCast(i.int)] } },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+    };
 }
 
 fn print_ascii(ascii: i32) void {
