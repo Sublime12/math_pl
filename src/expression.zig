@@ -178,7 +178,11 @@ pub const Expr = struct {
         };
     }
 
-    pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr), l: *const Lexer,) Expr {
+    pub fn create_fn_call(
+        name: []const u8,
+        args: std.ArrayList(Expr),
+        l: *const Lexer,
+    ) Expr {
         return .{
             .as = .{ .fn_call = .{ .name = name, .args = args } },
             .cursor = l.previous_cursor,
