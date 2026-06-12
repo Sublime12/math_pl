@@ -226,6 +226,15 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_var(name: []const u8, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .var_ = name },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
