@@ -235,6 +235,18 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_field_access(lhs_dot: *Expr, field: []const u8, l: *const Lexer,) Expr {
+        return .{
+            .as = .{ .field_access = .{
+                .lhs = lhs_dot,
+                .field = field,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {

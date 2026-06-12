@@ -93,13 +93,7 @@ pub const Parser = struct {
 
                     const lhs_dot = try alloc.create(Expr);
                     lhs_dot.* = Expr.create_var(name, l);
-                    const expr: Expr = .{
-                        .as = .{ .field_access = .{ .lhs = lhs_dot, .field = field } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
-                    // l.nexti();
+                    const expr = Expr.create_field_access(lhs_dot, field, l);
                     break :blk expr;
                 },
                 else => blk: {
