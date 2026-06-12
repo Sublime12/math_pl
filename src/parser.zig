@@ -348,12 +348,7 @@ pub const Parser = struct {
                 l.eat(.oparen);
                 const args = try parseArgs(l, alloc);
                 l.eat(.cparen);
-                return .{
-                    .as = .{ .fn_call = .{ .name = name, .args = args } },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_fn_call(name, args, l);
             },
             // an open paren (not in the context of a function)
             .oparen => {

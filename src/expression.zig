@@ -177,6 +177,15 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_fn_call(name: []const u8, args: std.ArrayList(Expr), l: *const Lexer,) Expr {
+        return .{
+            .as = .{ .fn_call = .{ .name = name, .args = args } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
