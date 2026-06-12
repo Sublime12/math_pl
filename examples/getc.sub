@@ -5,5 +5,5 @@ let print_underscore = fn str n l ->
     bind c = getc(str, n,) in
     bind _a = print(c,) in
     bind _b = print_str("_",) in
-    print_underscore(str, n.x + 1, l,)
+    print_underscore(str, n + 1, l,)
 ;
