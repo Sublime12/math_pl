@@ -17,7 +17,7 @@ const SliceId = struct {
     first: usize,
     end: usize,
 
-    pub fn asStr(self: Self, content: []const u8) []const u8 {
+    pub fn as_str(self: Self, content: []const u8) []const u8 {
         return content[self.first..self.end];
     }
 
@@ -85,8 +85,8 @@ pub const Lexer = struct {
                 l.file_path,
                 l.cursor.row + 1,
                 l.cursor.col,
-                expected.getStrRepresention(),
-                l.name.asStr(l.content),
+                expected.get_str(),
+                l.name.as_str(l.content),
                 panic_line,
             });
 
@@ -99,7 +99,7 @@ pub const Lexer = struct {
         }
     }
 
-    fn clearAppendSymbol(l: *Lexer, x: u8) void {
+    fn clear_append_symbol(l: *Lexer, x: u8) void {
         _ = x;
         // l.name.clearRetainingCapacity();
         // cursor.pos always return the position after the last
@@ -108,7 +108,7 @@ pub const Lexer = struct {
         l.name.extend();
     }
 
-    fn setToken(l: *Lexer, token: TokenKind) void {
+    fn set_token(l: *Lexer, token: TokenKind) void {
         switch (token) {
             .minus, .prod, .plus => |t| {
                 l.token = t;
@@ -165,77 +165,77 @@ pub const Lexer = struct {
 
         switch (x) {
             '=' => {
-                l.clearAppendSymbol(x);
+                l.clear_append_symbol(x);
                 const n_char = l.current_char();
                 if (n_char == '=') {
                     _ = l.next_char();
                     l.name.extend();
-                    l.setToken(.eql);
+                    l.set_token(.eql);
                     return true;
                 }
-                l.setToken(.assign);
+                l.set_token(.assign);
                 return true;
             },
             '-' => {
-                l.clearAppendSymbol(x);
+                l.clear_append_symbol(x);
                 const n_char = l.current_char();
                 if (n_char == '>') {
                     _ = l.next_char();
                     l.name.extend();
-                    l.setToken(.arrow);
+                    l.set_token(.arrow);
                     return true;
                 }
-                l.setToken(.minus);
+                l.set_token(.minus);
                 return true;
             },
             '(' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.oparen);
+                l.clear_append_symbol(x);
+                l.set_token(.oparen);
                 return true;
             },
             ')' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.cparen);
+                l.clear_append_symbol(x);
+                l.set_token(.cparen);
                 return true;
             },
             '{' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.obrace);
+                l.clear_append_symbol(x);
+                l.set_token(.obrace);
                 return true;
             },
             '}' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.cbrace);
+                l.clear_append_symbol(x);
+                l.set_token(.cbrace);
                 return true;
             },
             '*' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.prod);
+                l.clear_append_symbol(x);
+                l.set_token(.prod);
                 return true;
             },
             '+' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.plus);
+                l.clear_append_symbol(x);
+                l.set_token(.plus);
                 return true;
             },
             ',' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.comma);
+                l.clear_append_symbol(x);
+                l.set_token(.comma);
                 return true;
             },
             '.' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.dot);
+                l.clear_append_symbol(x);
+                l.set_token(.dot);
                 return true;
             },
             ';' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.semicolon);
+                l.clear_append_symbol(x);
+                l.set_token(.semicolon);
                 return true;
             },
             '@' => {
-                l.clearAppendSymbol(x);
-                l.setToken(.at);
+                l.clear_append_symbol(x);
+                l.set_token(.at);
                 return true;
             },
             '"' => {
@@ -245,7 +245,7 @@ pub const Lexer = struct {
                 // l.name.extend();
 
                 l.lexString(nb);
-                l.setToken(.str);
+                l.set_token(.str);
                 return true;
                 // panic("unimplemented str token found", .{});
             },
@@ -253,57 +253,57 @@ pub const Lexer = struct {
         }
 
         if (isSymbol(x)) {
-            l.clearAppendSymbol(x);
+            l.clear_append_symbol(x);
             while (l.current_char()) |c| {
                 if (!isSymbol(c)) break;
                 l.name.extend();
                 _ = l.next_char();
             }
 
-            if (eql("let", l.name.asStr(l.content))) {
-                l.setToken(.let);
+            if (eql("let", l.name.as_str(l.content))) {
+                l.set_token(.let);
                 return true;
-            } else if (eql("if", l.name.asStr(l.content))) {
-                l.setToken(.if_);
+            } else if (eql("if", l.name.as_str(l.content))) {
+                l.set_token(.if_);
                 return true;
-            } else if (eql("bind", l.name.asStr(l.content))) {
-                l.setToken(.bind);
+            } else if (eql("bind", l.name.as_str(l.content))) {
+                l.set_token(.bind);
                 return true;
-            } else if (eql("in", l.name.asStr(l.content))) {
-                l.setToken(.in);
+            } else if (eql("in", l.name.as_str(l.content))) {
+                l.set_token(.in);
                 return true;
-            } else if (eql("self_fn", l.name.asStr(l.content))) {
-                l.setToken(.self_fn);
+            } else if (eql("self_fn", l.name.as_str(l.content))) {
+                l.set_token(.self_fn);
                 return true;
-            } else if (eql("fn", l.name.asStr(l.content))) {
-                l.setToken(.fn_);
+            } else if (eql("fn", l.name.as_str(l.content))) {
+                l.set_token(.fn_);
                 return true;
-            } else if (eql("then", l.name.asStr(l.content))) {
-                l.setToken(.then);
+            } else if (eql("then", l.name.as_str(l.content))) {
+                l.set_token(.then);
                 return true;
-            } else if (eql("else", l.name.asStr(l.content))) {
-                l.setToken(.else_);
+            } else if (eql("else", l.name.as_str(l.content))) {
+                l.set_token(.else_);
                 return true;
-            } else if (eql("struct", l.name.asStr(l.content))) {
-                l.setToken(.struct_);
+            } else if (eql("struct", l.name.as_str(l.content))) {
+                l.set_token(.struct_);
                 return true;
-            } else if (eql("true", l.name.asStr(l.content))) {
-                l.setToken(.bool_);
+            } else if (eql("true", l.name.as_str(l.content))) {
+                l.set_token(.bool_);
                 l.bool_value = true;
                 return true;
-            } else if (eql("false", l.name.asStr(l.content))) {
-                l.setToken(.bool_);
+            } else if (eql("false", l.name.as_str(l.content))) {
+                l.set_token(.bool_);
                 l.bool_value = false;
                 return true;
-            } else if (std.ascii.isDigit(l.name.asStr(l.content)[0])) {
-                const number = std.fmt.parseInt(i32, l.name.asStr(l.content), 10) catch {
-                    panic("Expected number, found: {s}", .{l.name.asStr(l.content)});
+            } else if (std.ascii.isDigit(l.name.as_str(l.content)[0])) {
+                const number = std.fmt.parseInt(i32, l.name.as_str(l.content), 10) catch {
+                    panic("Expected number, found: {s}", .{l.name.as_str(l.content)});
                 };
                 l.integer_value = number;
-                l.setToken(.int);
+                l.set_token(.int);
                 return true;
             } else {
-                l.setToken(.id);
+                l.set_token(.id);
                 return true;
             }
         }
@@ -436,7 +436,7 @@ const TokenKind = enum {
     none,
     end,
 
-    pub fn getStrRepresention(token: Self) []const u8 {
+    pub fn get_str(token: Self) []const u8 {
         return switch (token) {
             .eql => "==",
             .assign => "=",
@@ -512,13 +512,13 @@ test "lex string" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("bon \"abc\" x", l.name.asStr(l.content));
+    try expectStrings("bon \"abc\" x", l.name.as_str(l.content));
     l.nexti();
-    try expectStrings("amis ", l.name.asStr(l.content));
+    try expectStrings("amis ", l.name.as_str(l.content));
     l.nexti();
-    try expectStrings("a", l.name.asStr(l.content));
+    try expectStrings("a", l.name.as_str(l.content));
     l.nexti();
-    try expectStrings("a\\n", l.name.asStr(l.content));
+    try expectStrings("a\\n", l.name.as_str(l.content));
 
     l.nexti();
     try expectEqual(.end, l.token);
@@ -531,15 +531,15 @@ test "lex identifiers" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("variable_name", l.name.asStr(l.content));
+    try expectStrings("variable_name", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
-    try expectStrings("x123", l.name.asStr(l.content));
+    try expectStrings("x123", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
-    try expectStrings("_secret_id", l.name.asStr(l.content));
+    try expectStrings("_secret_id", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
@@ -561,7 +561,7 @@ test "lex integers" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("4567", l.name.asStr(l.content));
+    try expectStrings("4567", l.name.as_str(l.content));
     try expectEqual(4567, l.integer_value);
     try expectEqual(.int, l.token);
 
@@ -596,79 +596,79 @@ test "lex if expression" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("if", l.name.asStr(l.content));
+    try expectStrings("if", l.name.as_str(l.content));
     try expectEqual(.if_, l.token);
 
     l.nexti();
-    try expectStrings("1", l.name.asStr(l.content));
+    try expectStrings("1", l.name.as_str(l.content));
     try expectEqual(1, l.integer_value);
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("+", l.name.asStr(l.content));
+    try expectStrings("+", l.name.as_str(l.content));
     try expectEqual(.plus, l.token);
 
     l.nexti();
-    try expectStrings("3", l.name.asStr(l.content));
+    try expectStrings("3", l.name.as_str(l.content));
     try expectEqual(3, l.integer_value);
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("=", l.name.asStr(l.content));
+    try expectStrings("=", l.name.as_str(l.content));
     try expectEqual(.assign, l.token);
 
     l.nexti();
-    try expectStrings("7", l.name.asStr(l.content));
+    try expectStrings("7", l.name.as_str(l.content));
     try expectEqual(7, l.integer_value);
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.asStr(l.content));
+    try expectStrings("then", l.name.as_str(l.content));
     try expectEqual(.then, l.token);
 
     l.nexti();
-    try expectStrings("print_str", l.name.asStr(l.content));
+    try expectStrings("print_str", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
-    try expectStrings("(", l.name.asStr(l.content));
+    try expectStrings("(", l.name.as_str(l.content));
     try expectEqual(.oparen, l.token);
 
     l.nexti();
-    try expectStrings(" hello \"world\" ", l.name.asStr(l.content));
+    try expectStrings(" hello \"world\" ", l.name.as_str(l.content));
     try expectEqual(.str, l.token);
 
     l.nexti();
-    try expectStrings(",", l.name.asStr(l.content));
+    try expectStrings(",", l.name.as_str(l.content));
     try expectEqual(.comma, l.token);
 
     l.nexti();
-    try expectStrings(")", l.name.asStr(l.content));
+    try expectStrings(")", l.name.as_str(l.content));
     try expectEqual(.cparen, l.token);
 
     l.nexti();
-    try expectStrings("else", l.name.asStr(l.content));
+    try expectStrings("else", l.name.as_str(l.content));
     try expectEqual(.else_, l.token);
 
     l.nexti();
-    try expectStrings("double", l.name.asStr(l.content));
+    try expectStrings("double", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
-    try expectStrings("(", l.name.asStr(l.content));
+    try expectStrings("(", l.name.as_str(l.content));
     try expectEqual(.oparen, l.token);
 
     l.nexti();
-    try expectStrings("7", l.name.asStr(l.content));
+    try expectStrings("7", l.name.as_str(l.content));
     try expectEqual(7, l.integer_value);
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings(")", l.name.asStr(l.content));
+    try expectStrings(")", l.name.as_str(l.content));
     try expectEqual(.cparen, l.token);
 
     l.nexti();
-    try expectStrings(";", l.name.asStr(l.content));
+    try expectStrings(";", l.name.as_str(l.content));
     try expectEqual(.semicolon, l.token);
 
     l.nexti();
@@ -682,19 +682,19 @@ test "lex bind and self_fn" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("bind", l.name.asStr(l.content));
+    try expectStrings("bind", l.name.as_str(l.content));
     try expectEqual(.bind, l.token);
 
     l.nexti();
-    try expectStrings("f", l.name.asStr(l.content));
+    try expectStrings("f", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 
     l.nexti();
-    try expectStrings("=", l.name.asStr(l.content));
+    try expectStrings("=", l.name.as_str(l.content));
     try expectEqual(.assign, l.token);
 
     l.nexti();
-    try expectStrings("x", l.name.asStr(l.content));
+    try expectStrings("x", l.name.as_str(l.content));
     try expectEqual(.id, l.token);
 }
 
@@ -705,16 +705,16 @@ test "lex false and equality" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("false", l.name.asStr(l.content));
+    try expectStrings("false", l.name.as_str(l.content));
     try expectEqual(false, l.bool_value);
     try expectEqual(.bool_, l.token);
 
     l.nexti();
-    try expectStrings("==", l.name.asStr(l.content));
+    try expectStrings("==", l.name.as_str(l.content));
     try expectEqual(.eql, l.token);
 
     l.nexti();
-    try expectStrings("true", l.name.asStr(l.content));
+    try expectStrings("true", l.name.as_str(l.content));
     try expectEqual(true, l.bool_value);
     try expectEqual(.bool_, l.token);
 }
@@ -734,7 +734,7 @@ test "lex arithmetic operators and punctuation" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("(", l.name.asStr(l.content));
+    try expectStrings("(", l.name.as_str(l.content));
     try expectEqual(.oparen, l.token);
 
     l.nexti();
@@ -742,7 +742,7 @@ test "lex arithmetic operators and punctuation" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("+", l.name.asStr(l.content));
+    try expectStrings("+", l.name.as_str(l.content));
     try expectEqual(.plus, l.token);
 
     l.nexti();
@@ -750,11 +750,11 @@ test "lex arithmetic operators and punctuation" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings(")", l.name.asStr(l.content));
+    try expectStrings(")", l.name.as_str(l.content));
     try expectEqual(.cparen, l.token);
 
     l.nexti();
-    try expectStrings("*", l.name.asStr(l.content));
+    try expectStrings("*", l.name.as_str(l.content));
     try expectEqual(.prod, l.token);
 
     l.nexti();
@@ -762,7 +762,7 @@ test "lex arithmetic operators and punctuation" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings("-", l.name.asStr(l.content));
+    try expectStrings("-", l.name.as_str(l.content));
     try expectEqual(.minus, l.token);
 
     l.nexti();
@@ -770,7 +770,7 @@ test "lex arithmetic operators and punctuation" {
     try expectEqual(.int, l.token);
 
     l.nexti();
-    try expectStrings(",", l.name.asStr(l.content));
+    try expectStrings(",", l.name.as_str(l.content));
     try expectEqual(.comma, l.token);
 
     l.nexti();
@@ -784,59 +784,59 @@ test "lex core keywords" {
     var l = Lexer.init(source_code, "test.zig");
 
     l.nexti();
-    try expectStrings("let", l.name.asStr(l.content));
+    try expectStrings("let", l.name.as_str(l.content));
     try expectEqual(.let, l.token);
 
     l.nexti();
-    try expectStrings("fn", l.name.asStr(l.content));
+    try expectStrings("fn", l.name.as_str(l.content));
     try expectEqual(.fn_, l.token);
 
     l.nexti();
-    try expectStrings("if", l.name.asStr(l.content));
+    try expectStrings("if", l.name.as_str(l.content));
     try expectEqual(.if_, l.token);
 
     l.nexti();
-    try expectStrings("then", l.name.asStr(l.content));
+    try expectStrings("then", l.name.as_str(l.content));
     try expectEqual(.then, l.token);
 
     l.nexti();
-    try expectStrings("else", l.name.asStr(l.content));
+    try expectStrings("else", l.name.as_str(l.content));
     try expectEqual(.else_, l.token);
 
     l.nexti();
-    try expectStrings("in", l.name.asStr(l.content));
+    try expectStrings("in", l.name.as_str(l.content));
     try expectEqual(.in, l.token);
 
     l.nexti();
-    try expectStrings("bind", l.name.asStr(l.content));
+    try expectStrings("bind", l.name.as_str(l.content));
     try expectEqual(.bind, l.token);
 
     l.nexti();
-    try expectStrings("@", l.name.asStr(l.content));
+    try expectStrings("@", l.name.as_str(l.content));
     try expectEqual(.at, l.token);
 
     l.nexti();
-    try expectStrings(".", l.name.asStr(l.content));
+    try expectStrings(".", l.name.as_str(l.content));
     try expectEqual(.dot, l.token);
 
     l.nexti();
-    try expectStrings("{", l.name.asStr(l.content));
+    try expectStrings("{", l.name.as_str(l.content));
     try expectEqual(.obrace, l.token);
 
     l.nexti();
-    try expectStrings("}", l.name.asStr(l.content));
+    try expectStrings("}", l.name.as_str(l.content));
     try expectEqual(.cbrace, l.token);
 
     l.nexti();
-    try expectStrings("{", l.name.asStr(l.content));
+    try expectStrings("{", l.name.as_str(l.content));
     try expectEqual(.obrace, l.token);
 
     l.nexti();
-    try expectStrings("struct", l.name.asStr(l.content));
+    try expectStrings("struct", l.name.as_str(l.content));
     try expectEqual(.struct_, l.token);
 
     l.nexti();
-    try expectStrings("@", l.name.asStr(l.content));
+    try expectStrings("@", l.name.as_str(l.content));
     try expectEqual(.at, l.token);
 
     l.nexti();

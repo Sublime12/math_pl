@@ -47,13 +47,13 @@ pub const Parser = struct {
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.id);
-        const id = l.name.asStr(l.content);
+        const id = l.name.as_str(l.content);
         l.nexti();
         l.eat(.assign);
         l.eat(.fn_);
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .id) {
-            try args.append(alloc, l.name.asStr(l.content));
+            try args.append(alloc, l.name.as_str(l.content));
             l.nexti();
         }
         l.eat(.arrow);
@@ -73,7 +73,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     fn parseBeginWithIdOrIntOrBool(l: *Lexer, alloc: Allocator) !Expr {
-        const name = l.name.asStr(l.content);
+        const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
         if (l.token == .id) {
@@ -88,7 +88,7 @@ pub const Parser = struct {
                     l.eat(.dot);
 
                     l.expect(.id);
-                    const field = l.name.asStr(l.content);
+                    const field = l.name.as_str(l.content);
                     l.nexti();
 
                     const lhs_dot = try alloc.create(Expr);
@@ -105,7 +105,7 @@ pub const Parser = struct {
             lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = Expr.create_arith(.{ .str = l.name.asStr(l.content) }, l);
+            lhs.* = Expr.create_arith(.{ .str = l.name.as_str(l.content) }, l);
             l.nexti();
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
@@ -121,7 +121,7 @@ pub const Parser = struct {
             next_l = l.*;
             next_l.nexti();
 
-            const current_name = l.name.asStr(l.content);
+            const current_name = l.name.as_str(l.content);
             const int_value = l.integer_value;
             const bool_value = l.bool_value;
 
@@ -252,7 +252,7 @@ pub const Parser = struct {
                 return parseBeginWithIdOrIntOrBool(l, alloc);
             },
             .self_fn => {
-                const name = l.name.asStr(l.content);
+                const name = l.name.as_str(l.content);
                 l.nexti();
                 l.eat(.oparen);
                 const args = try parseArgs(l, alloc);
@@ -279,14 +279,14 @@ pub const Parser = struct {
 
         panic(
             "Panic with token {}, value: {s}",
-            .{ l.token, l.name.asStr(l.content) },
+            .{ l.token, l.name.as_str(l.content) },
         );
     }
 
     fn parseStructInstance(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
-        const name = l.name.asStr(l.content);
+        const name = l.name.as_str(l.content);
         l.nexti();
 
         l.eat(.obrace);
@@ -295,7 +295,7 @@ pub const Parser = struct {
             l.eat(.dot);
 
             l.expect(.id);
-            const field = l.name.asStr(l.content);
+            const field = l.name.as_str(l.content);
             l.nexti();
             l.eat(.assign);
 
@@ -310,14 +310,14 @@ pub const Parser = struct {
     fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
         l.eat(.struct_);
         l.expect(.id);
-        const struct_name = l.name.asStr(l.content);
+        const struct_name = l.name.as_str(l.content);
         l.nexti();
         l.eat(.obrace);
 
         var fields: std.ArrayList([]const u8) = .empty;
         while (l.token != .cbrace) {
             l.expect(.id);
-            const field = l.name.asStr(l.content);
+            const field = l.name.as_str(l.content);
             l.nexti();
             try fields.append(alloc, field);
             l.eat(.comma);
@@ -331,7 +331,7 @@ pub const Parser = struct {
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
-        const id = l.name.asStr(l.content);
+        const id = l.name.as_str(l.content);
         l.nexti();
 
         l.eat(.assign);

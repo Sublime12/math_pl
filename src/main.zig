@@ -18,8 +18,8 @@ const assert = std.debug.assert;
 const print = std.debug.print;
 const eql = std.ascii.eqlIgnoreCase;
 const eval = eval_pkg.eval;
-const buildContext = eval_pkg.buildContext;
-const semAnal = eval_pkg.semAnal;
+const build_context = eval_pkg.build_context;
+const sema = eval_pkg.sema;
 const expect = std.testing.expectEqual;
 
 pub fn main() !void {
@@ -44,8 +44,8 @@ pub fn main() !void {
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    const ctx = try buildContext(expr, alloc, source_code, file_path);
-    semAnal(expr, ctx);
+    const ctx = try build_context(expr, alloc, source_code, file_path);
+    sema(expr, ctx);
 
     _ = eval(expr, ctx, local_vars);
     print("\n", .{});
