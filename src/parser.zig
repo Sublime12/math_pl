@@ -102,28 +102,13 @@ pub const Parser = struct {
                 },
             };
         } else if (l.token == .int) {
-            lhs.* = .{
-                .as = .{ .arith = .{ .constant = l.integer_value.? } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = .{
-                .as = .{ .arith = .{ .str = l.name.asStr(l.content) } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_arith(.{ .str = l.name.asStr(l.content) }, l);
             l.nexti();
         } else if (l.token == .bool_) {
-            lhs.* = .{
-                .as = .{ .bool_ = .{ .constant = l.bool_value.? } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
