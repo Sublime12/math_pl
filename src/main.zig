@@ -44,7 +44,7 @@ pub fn main() !void {
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    const ctx = try buildContext(expr, alloc);
+    const ctx = try buildContext(expr, alloc, source_code, file_path);
     semAnal(expr, ctx);
 
     _ = eval(expr, ctx, local_vars);

@@ -42,7 +42,12 @@ pub const Parser = struct {
             try program.append(self.alloc, expr);
             i += 1;
         }
-        return .{ .list = program };
+        return .{
+            .as = .{ .list = program },
+            .cursor = self.lexer.cursor,
+            .content = self.lexer.content,
+            .file_path = self.lexer.file_path,
+        };
     }
 
     fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
@@ -66,7 +71,12 @@ pub const Parser = struct {
             .args = args,
             .body = .{ .fn_std = .{ .body = body } },
         };
-        return .{ .fn_def = fn_expr };
+        return .{
+            .as = .{ .fn_def = fn_expr },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
     }
 
     /// can be an arith expr a + 1 - 3
@@ -92,24 +102,54 @@ pub const Parser = struct {
                     l.nexti();
 
                     const lhs_dot = try alloc.create(Expr);
-                    lhs_dot.* = .{ .var_ = name };
-                    const expr: Expr = .{ .field_access = .{ .lhs = lhs_dot, .field = field } };
+                    lhs_dot.* = .{
+                        .as = .{ .var_ = name },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
+                    const expr: Expr = .{
+                        .as = .{ .field_access = .{ .lhs = lhs_dot, .field = field } },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                     // l.nexti();
                     break :blk expr;
                 },
                 else => blk: {
                     l.nexti();
-                    break :blk .{ .var_ = name };
+                    break :blk .{
+                        .as = .{ .var_ = name },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
             };
         } else if (l.token == .int) {
-            lhs.* = .{ .arith = .{ .constant = l.integer_value.? } };
+            lhs.* = .{
+                .as = .{ .arith = .{ .constant = l.integer_value.? } },
+                .cursor = l.previous_cursor,
+                .content = l.content,
+                .file_path = l.file_path,
+            };
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = .{ .arith = .{ .str = l.name.asStr(l.content) } };
+            lhs.* = .{
+                .as = .{ .arith = .{ .str = l.name.asStr(l.content) } },
+                .cursor = l.previous_cursor,
+                .content = l.content,
+                .file_path = l.file_path,
+            };
             l.nexti();
         } else if (l.token == .bool_) {
-            lhs.* = .{ .bool_ = .{ .constant = l.bool_value.? } };
+            lhs.* = .{
+                .as = .{ .bool_ = .{ .constant = l.bool_value.? } },
+                .cursor = l.previous_cursor,
+                .content = l.content,
+                .file_path = l.file_path,
+            };
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
@@ -133,19 +173,39 @@ pub const Parser = struct {
                     break :blk expr;
                 } else blk: {
                     l.nexti();
-                    break :blk .{ .var_ = current_name };
+                    break :blk .{
+                        .as = .{ .var_ = current_name },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
                 .int => blk: {
                     l.nexti();
-                    break :blk .{ .arith = .{ .constant = int_value.? } };
+                    break :blk .{
+                        .as = .{ .arith = .{ .constant = int_value.? } },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
                 .bool_ => blk: {
                     l.nexti();
-                    break :blk .{ .bool_ = .{ .constant = bool_value.? } };
+                    break :blk .{
+                        .as = .{ .bool_ = .{ .constant = bool_value.? } },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
                 .str => blk: {
                     l.nexti();
-                    break :blk .{ .arith = .{ .str = current_name } };
+                    break :blk .{
+                        .as = .{ .arith = .{ .str = current_name } },
+                        .cursor = l.previous_cursor,
+                        .content = l.content,
+                        .file_path = l.file_path,
+                    };
                 },
                 else => blk: {
                     const expr = try parseExpr(l, alloc);
@@ -162,7 +222,12 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{ .arith = op };
+                lhs.* = .{
+                    .as = .{ .arith = op },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             } else if (op_token_type == .bool_op) {
                 const op: BoolExpr = switch (op_token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
@@ -170,11 +235,21 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{ .bool_ = op };
+                lhs.* = .{
+                    .as = .{ .bool_ = op },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             } else if (op_token == .dot) {
-                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.var_ };
+                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.as.var_ };
                 lhs = try alloc.create(Expr);
-                lhs.* = .{ .field_access = op };
+                lhs.* = .{
+                    .as = .{ .field_access = op },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             }
         }
 
@@ -185,7 +260,12 @@ pub const Parser = struct {
         l.eat(.oparen);
         const args = try parseArgs(l, alloc);
         l.eat(.cparen);
-        const lhs: Expr = .{ .fn_call = .{ .name = name, .args = args } };
+        const lhs: Expr = .{
+            .as = .{ .fn_call = .{ .name = name, .args = args } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
         return lhs;
     }
 
@@ -217,7 +297,12 @@ pub const Parser = struct {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{ .bool_ = op };
+                return .{
+                    .as = .{ .bool_ = op },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             },
             .arith_op => {
                 l.nexti();
@@ -231,7 +316,12 @@ pub const Parser = struct {
                     .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{ .arith = op };
+                return .{
+                    .as = .{ .arith = op },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             },
             else => {},
         }
@@ -258,7 +348,12 @@ pub const Parser = struct {
                 l.eat(.oparen);
                 const args = try parseArgs(l, alloc);
                 l.eat(.cparen);
-                return .{ .fn_call = .{ .name = name, .args = args } };
+                return .{
+                    .as = .{ .fn_call = .{ .name = name, .args = args } },
+                    .cursor = l.previous_cursor,
+                    .content = l.content,
+                    .file_path = l.file_path,
+                };
             },
             // an open paren (not in the context of a function)
             .oparen => {
@@ -305,7 +400,12 @@ pub const Parser = struct {
             try fields.putNoClobber(alloc, field, value);
         }
         l.nexti();
-        return .{ .struct_instance = .{ .name = name, .fields = fields } };
+        return .{
+            .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
     }
 
     fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
@@ -325,7 +425,12 @@ pub const Parser = struct {
         }
 
         l.eat(.cbrace);
-        return .{ .struct_ = .{ .name = struct_name, .fields = fields } };
+        return .{
+            .as = .{ .struct_ = .{ .name = struct_name, .fields = fields } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
     }
 
     fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
@@ -341,11 +446,16 @@ pub const Parser = struct {
 
         const closure = try alloc.create(Expr);
         closure.* = try parseExpr(l, alloc);
-        return .{ .bind = .{
-            .id = id,
-            .body = body,
-            .closure = closure,
-        } };
+        return .{
+            .as = .{ .bind = .{
+                .id = id,
+                .body = body,
+                .closure = closure,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
     }
 
     fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
@@ -359,11 +469,16 @@ pub const Parser = struct {
         else_.* = try parseExpr(l, alloc);
 
         return .{
-            .if_ = .{
-                .eval = eval,
-                .then = then,
-                .else_ = else_,
+            .as = .{
+                .if_ = .{
+                    .eval = eval,
+                    .then = then,
+                    .else_ = else_,
+                },
             },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
         };
     }
 
@@ -399,16 +514,16 @@ test "simple fn expression" {
     var lexer = Lexer.init(source_code, "test.zig");
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
-    try expect(.list, expr.tag());
-    const fn_call = expr.list.items[0];
-    try expect(.fn_call, fn_call.tag());
+    try expect(.list, expr.as.tag());
+    const fn_call = expr.as.list.items[0];
+    try expect(.fn_call, fn_call.as.tag());
 
-    const args = fn_call.fn_call.args;
+    const args = fn_call.as.fn_call.args;
     try expect(1, args.items.len);
     const arg = args.items[0];
-    try expect(.arith, arg.tag());
-    try expect(.constant, arg.arith.tag());
-    try expect(97, arg.arith.constant);
+    try expect(.arith, arg.as.tag());
+    try expect(.constant, arg.as.arith.tag());
+    try expect(97, arg.as.arith.constant);
 }
 
 test "parse print_str function" {
@@ -423,29 +538,29 @@ test "parse print_str function" {
 
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
-    try expect(.list, expr.tag());
+    try expect(.list, expr.as.tag());
 
-    try expect(1, expr.list.items.len);
-    const fn_call = expr.list.items[0];
-    try expect(.fn_call, fn_call.tag());
-    try expectStrings("print_str", fn_call.fn_call.name);
+    try expect(1, expr.as.list.items.len);
+    const fn_call = expr.as.list.items[0];
+    try expect(.fn_call, fn_call.as.tag());
+    try expectStrings("print_str", fn_call.as.fn_call.name);
 
-    const args = fn_call.fn_call.args;
+    const args = fn_call.as.fn_call.args;
     try expect(1, args.items.len);
     const arg = args.items[0];
-    try expect(.arith, arg.tag());
-    try expect(.plus, arg.arith.tag());
+    try expect(.arith, arg.as.tag());
+    try expect(.plus, arg.as.arith.tag());
 
-    const lhs = arg.arith.plus.lhs;
-    const rhs = arg.arith.plus.rhs;
+    const lhs = arg.as.arith.plus.lhs;
+    const rhs = arg.as.arith.plus.rhs;
 
-    try expect(.arith, lhs.tag());
-    try expect(.str, lhs.arith.tag());
-    try expectStrings("bonjour", lhs.*.arith.str);
+    try expect(.arith, lhs.as.tag());
+    try expect(.str, lhs.as.arith.tag());
+    try expectStrings("bonjour", lhs.as.arith.str);
 
-    try expect(.arith, rhs.tag());
-    try expect(.str, rhs.arith.tag());
-    try expectStrings("papa", rhs.*.arith.str);
+    try expect(.arith, rhs.as.tag());
+    try expect(.str, rhs.as.arith.tag());
+    try expectStrings("papa", rhs.as.arith.str);
 }
 
 test "parse function definition" {
@@ -460,19 +575,19 @@ test "parse function definition" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
-    try expect(1, expr.list.items.len);
+    try expect(.list, expr.as.tag());
+    try expect(1, expr.as.list.items.len);
 
-    const fn_def = expr.list.items[0];
-    try expect(.fn_def, fn_def.tag());
-    try expectStrings("add", fn_def.fn_def.name);
-    try expect(2, fn_def.fn_def.args.items.len);
-    try expectStrings("x", fn_def.fn_def.args.items[0]);
-    try expectStrings("y", fn_def.fn_def.args.items[1]);
+    const fn_def = expr.as.list.items[0];
+    try expect(.fn_def, fn_def.as.tag());
+    try expectStrings("add", fn_def.as.fn_def.name);
+    try expect(2, fn_def.as.fn_def.args.items.len);
+    try expectStrings("x", fn_def.as.fn_def.args.items[0]);
+    try expectStrings("y", fn_def.as.fn_def.args.items[1]);
 
-    const body = fn_def.fn_def.body.fn_std.body.*;
-    try expect(.arith, body.tag());
-    try expect(.plus, body.arith.tag());
+    const body = fn_def.as.fn_def.body.fn_std.body.*;
+    try expect(.arith, body.as.tag());
+    try expect(.plus, body.as.arith.tag());
 }
 
 test "parse if expression" {
@@ -487,33 +602,33 @@ test "parse if expression" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
+    try expect(.list, expr.as.tag());
 
-    const if_expr = expr.list.items[0];
-    try expect(.if_, if_expr.tag());
+    const if_expr = expr.as.list.items[0];
+    try expect(.if_, if_expr.as.tag());
 
-    const eval_node = if_expr.if_.eval.*;
-    try expect(.bool_, eval_node.tag());
-    try expect(.eql, eval_node.bool_.tag());
+    const eval_node = if_expr.as.if_.eval.*;
+    try expect(.bool_, eval_node.as.tag());
+    try expect(.eql, eval_node.as.bool_.tag());
 
-    const lhs = eval_node.bool_.eql.lhs;
-    try expect(.var_, lhs.tag());
-    try expectStrings("n", lhs.var_);
+    const lhs = eval_node.as.bool_.eql.lhs;
+    try expect(.var_, lhs.as.tag());
+    try expectStrings("n", lhs.as.var_);
 
-    const rhs = eval_node.bool_.eql.rhs;
-    try expect(.arith, rhs.tag());
-    try expect(.constant, rhs.arith.tag());
-    try expect(1, rhs.arith.constant);
+    const rhs = eval_node.as.bool_.eql.rhs;
+    try expect(.arith, rhs.as.tag());
+    try expect(.constant, rhs.as.arith.tag());
+    try expect(1, rhs.as.arith.constant);
 
-    const then_node = if_expr.if_.then.*;
-    try expect(.arith, then_node.tag());
-    try expect(.str, then_node.arith.tag());
-    try expectStrings("yes", then_node.arith.str);
+    const then_node = if_expr.as.if_.then.*;
+    try expect(.arith, then_node.as.tag());
+    try expect(.str, then_node.as.arith.tag());
+    try expectStrings("yes", then_node.as.arith.str);
 
-    const else_node = if_expr.if_.else_.*;
-    try expect(.arith, else_node.tag());
-    try expect(.str, else_node.arith.tag());
-    try expectStrings("no", else_node.arith.str);
+    const else_node = if_expr.as.if_.else_.*;
+    try expect(.arith, else_node.as.tag());
+    try expect(.str, else_node.as.arith.tag());
+    try expectStrings("no", else_node.as.arith.str);
 }
 
 test "parse nested bind expressions" {
@@ -531,38 +646,38 @@ test "parse nested bind expressions" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
-    try expect(2, expr.list.items.len);
+    try expect(.list, expr.as.tag());
+    try expect(2, expr.as.list.items.len);
 
-    const fn_def = expr.list.items[0];
-    try expect(.fn_def, fn_def.tag());
-    try expectStrings("double", fn_def.fn_def.name);
+    const fn_def = expr.as.list.items[0];
+    try expect(.fn_def, fn_def.as.tag());
+    try expectStrings("double", fn_def.as.fn_def.name);
 
-    const bind_n = expr.list.items[1];
-    try expect(.bind, bind_n.tag());
-    try expectStrings("n", bind_n.bind.id);
+    const bind_n = expr.as.list.items[1];
+    try expect(.bind, bind_n.as.tag());
+    try expectStrings("n", bind_n.as.bind.id);
 
-    const bind_n_body = bind_n.bind.body.*;
-    try expect(.arith, bind_n_body.tag());
-    try expect(.plus, bind_n_body.arith.tag());
+    const bind_n_body = bind_n.as.bind.body.*;
+    try expect(.arith, bind_n_body.as.tag());
+    try expect(.plus, bind_n_body.as.arith.tag());
 
-    const bind_n_double = bind_n.bind.closure.*;
-    try expect(.bind, bind_n_double.tag());
-    try expectStrings("n_double", bind_n_double.bind.id);
+    const bind_n_double = bind_n.as.bind.closure.*;
+    try expect(.bind, bind_n_double.as.tag());
+    try expectStrings("n_double", bind_n_double.as.bind.id);
 
-    const bind_n_double_body = bind_n_double.bind.body.*;
-    try expect(.fn_call, bind_n_double_body.tag());
-    try expectStrings("double", bind_n_double_body.fn_call.name);
-    try expect(1, bind_n_double_body.fn_call.args.items.len);
+    const bind_n_double_body = bind_n_double.as.bind.body.*;
+    try expect(.fn_call, bind_n_double_body.as.tag());
+    try expectStrings("double", bind_n_double_body.as.fn_call.name);
+    try expect(1, bind_n_double_body.as.fn_call.args.items.len);
 
-    const print_call = bind_n_double.bind.closure.*;
-    try expect(.fn_call, print_call.tag());
-    try expectStrings("print_int", print_call.fn_call.name);
-    try expect(1, print_call.fn_call.args.items.len);
+    const print_call = bind_n_double.as.bind.closure.*;
+    try expect(.fn_call, print_call.as.tag());
+    try expectStrings("print_int", print_call.as.fn_call.name);
+    try expect(1, print_call.as.fn_call.args.items.len);
 
-    const print_arg = print_call.fn_call.args.items[0];
-    try expect(.var_, print_arg.tag());
-    try expectStrings("n_double", print_arg.var_);
+    const print_arg = print_call.as.fn_call.args.items[0];
+    try expect(.var_, print_arg.as.tag());
+    try expectStrings("n_double", print_arg.as.var_);
 }
 
 test "parse struct instance" {
@@ -581,52 +696,52 @@ test "parse struct instance" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
-    try expect(1, expr.list.items.len);
+    try expect(.list, expr.as.tag());
+    try expect(1, expr.as.list.items.len);
 
-    const struct_expr = expr.list.items[0];
-    try expect(.struct_instance, struct_expr.tag());
-    try expectStrings("Point", struct_expr.struct_instance.name);
-    try expect(3, struct_expr.struct_instance.fields.size);
+    const struct_expr = expr.as.list.items[0];
+    try expect(.struct_instance, struct_expr.as.tag());
+    try expectStrings("Point", struct_expr.as.struct_instance.name);
+    try expect(3, struct_expr.as.struct_instance.fields.size);
 
-    const field_x = struct_expr.struct_instance.fields.get("x") orelse return std.testing.expect(false);
+    const field_x = struct_expr.as.struct_instance.fields.get("x") orelse return std.testing.expect(false);
 
-    try expect(.arith, field_x.tag());
-    try expect(.constant, field_x.arith.tag());
-    try expect(2, field_x.arith.constant);
+    try expect(.arith, field_x.as.tag());
+    try expect(.constant, field_x.as.arith.tag());
+    try expect(2, field_x.as.arith.constant);
 
-    const field_y = struct_expr.struct_instance.fields.get("y") orelse return std.testing.expect(false);
-    try expect(.arith, field_y.tag());
-    try expect(.constant, field_y.arith.tag());
-    try expect(5, field_y.arith.constant);
+    const field_y = struct_expr.as.struct_instance.fields.get("y") orelse return std.testing.expect(false);
+    try expect(.arith, field_y.as.tag());
+    try expect(.constant, field_y.as.arith.tag());
+    try expect(5, field_y.as.arith.constant);
 
-    const field_z = struct_expr.struct_instance.fields.get("z") orelse return std.testing.expect(false);
-    try expect(.if_, field_z.tag());
+    const field_z = struct_expr.as.struct_instance.fields.get("z") orelse return std.testing.expect(false);
+    try expect(.if_, field_z.as.tag());
 
-    const cond = field_z.if_.eval.*;
-    try expect(.bool_, cond.tag());
-    try expect(.eql, cond.bool_.tag());
+    const cond = field_z.as.if_.eval.*;
+    try expect(.bool_, cond.as.tag());
+    try expect(.eql, cond.as.bool_.tag());
 
-    const then_branch = field_z.if_.then.*;
-    try expect(.arith, then_branch.tag());
-    try expect(.str, then_branch.arith.tag());
-    try expectStrings("bonjour", then_branch.arith.str);
+    const then_branch = field_z.as.if_.then.*;
+    try expect(.arith, then_branch.as.tag());
+    try expect(.str, then_branch.as.arith.tag());
+    try expectStrings("bonjour", then_branch.as.arith.str);
 
-    const else_branch = field_z.if_.else_.*;
-    try expect(.fn_call, else_branch.tag());
-    try expectStrings("double", else_branch.fn_call.name);
-    try expect(1, else_branch.fn_call.args.items.len);
+    const else_branch = field_z.as.if_.else_.*;
+    try expect(.fn_call, else_branch.as.tag());
+    try expectStrings("double", else_branch.as.fn_call.name);
+    try expect(1, else_branch.as.fn_call.args.items.len);
 
-    const arg_expr = else_branch.fn_call.args.items[0];
-    try expect(.arith, arg_expr.tag());
-    try expect(.minus, arg_expr.arith.tag());
+    const arg_expr = else_branch.as.fn_call.args.items[0];
+    try expect(.arith, arg_expr.as.tag());
+    try expect(.minus, arg_expr.as.arith.tag());
 
-    const lhs_arith = arg_expr.arith.minus.lhs.*;
-    try expect(.plus, lhs_arith.arith.tag());
+    const lhs_arith = arg_expr.as.arith.minus.lhs.*;
+    try expect(.plus, lhs_arith.as.arith.tag());
 
-    const rhs_arith = arg_expr.arith.minus.rhs.*;
-    try expect(.constant, rhs_arith.arith.tag());
-    try expect(4, rhs_arith.arith.constant);
+    const rhs_arith = arg_expr.as.arith.minus.rhs.*;
+    try expect(.constant, rhs_arith.as.arith.tag());
+    try expect(4, rhs_arith.as.arith.constant);
 }
 
 test "parse field access with dot" {
@@ -641,24 +756,24 @@ test "parse field access with dot" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
-    try expect(1, expr.list.items.len);
+    try expect(.list, expr.as.tag());
+    try expect(1, expr.as.list.items.len);
 
-    const level_z = expr.list.items[0];
-    try expect(.field_access, level_z.tag());
-    try expectStrings("z", level_z.field_access.field);
+    const level_z = expr.as.list.items[0];
+    try expect(.field_access, level_z.as.tag());
+    try expectStrings("z", level_z.as.field_access.field);
 
-    const level_y = level_z.field_access.lhs.*;
-    try expect(.field_access, level_y.tag());
-    try expectStrings("y", level_y.field_access.field);
+    const level_y = level_z.as.field_access.lhs.*;
+    try expect(.field_access, level_y.as.tag());
+    try expectStrings("y", level_y.as.field_access.field);
 
-    const level_x = level_y.field_access.lhs.*;
-    try expect(.field_access, level_x.tag());
-    try expectStrings("x", level_x.field_access.field);
+    const level_x = level_y.as.field_access.lhs.*;
+    try expect(.field_access, level_x.as.tag());
+    try expectStrings("x", level_x.as.field_access.field);
 
-    const base_var = level_x.field_access.lhs.*;
-    try expect(.var_, base_var.tag());
-    try expectStrings("p", base_var.var_);
+    const base_var = level_x.as.field_access.lhs.*;
+    try expect(.var_, base_var.as.tag());
+    try expectStrings("p", base_var.as.var_);
 }
 
 test "parse true == false" {
@@ -673,18 +788,18 @@ test "parse true == false" {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
-    try expect(.list, expr.tag());
-    try expect(1, expr.list.items.len);
+    try expect(.list, expr.as.tag());
+    try expect(1, expr.as.list.items.len);
 
-    const eql_expr = expr.list.items[0];
-    try expect(.bool_, eql_expr.tag());
-    try expect(.eql, eql_expr.bool_.tag());
+    const eql_expr = expr.as.list.items[0];
+    try expect(.bool_, eql_expr.as.tag());
+    try expect(.eql, eql_expr.as.bool_.tag());
 
-    try expect(.bool_, eql_expr.bool_.eql.lhs.tag());
-    try expect(.constant, eql_expr.bool_.eql.lhs.bool_.tag());
-    try expect(true, eql_expr.bool_.eql.lhs.bool_.constant);
+    try expect(.bool_, eql_expr.as.bool_.eql.lhs.as.tag());
+    try expect(.constant, eql_expr.as.bool_.eql.lhs.as.bool_.tag());
+    try expect(true, eql_expr.as.bool_.eql.lhs.as.bool_.constant);
 
-    try expect(.bool_, eql_expr.bool_.eql.rhs.tag());
-    try expect(.constant, eql_expr.bool_.eql.rhs.bool_.tag());
-    try expect(false, eql_expr.bool_.eql.rhs.bool_.constant);
+    try expect(.bool_, eql_expr.as.bool_.eql.rhs.as.tag());
+    try expect(.constant, eql_expr.as.bool_.eql.rhs.as.bool_.tag());
+    try expect(false, eql_expr.as.bool_.eql.rhs.as.bool_.constant);
 }

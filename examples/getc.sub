@@ -1,5 +1,5 @@
 print_underscore("bonjour", 0, 7,);
-let print_underscore= fn str n l ->
+let print_underscore = fn str n l ->
   if n == l then 0
   else
     bind c = getc(str, n,) in
