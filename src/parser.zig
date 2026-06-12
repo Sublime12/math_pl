@@ -316,12 +316,7 @@ pub const Parser = struct {
                     .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{
-                    .as = .{ .arith = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_arith(op, l);
             },
             else => {},
         }

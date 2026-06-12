@@ -190,6 +190,15 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn create_arith(op: ArithExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .arith = op },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
