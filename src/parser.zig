@@ -98,12 +98,7 @@ pub const Parser = struct {
                 },
                 else => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .var_ = name },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_var(name, l);
                 },
             };
         } else if (l.token == .int) {
