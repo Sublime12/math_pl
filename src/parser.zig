@@ -470,21 +470,6 @@ pub const Parser = struct {
 
         return Expr.create_if(eval, then, else_, l);
     }
-
-    fn parseBool(l: *Lexer, alloc: Allocator) !Expr {
-        if (l.token == .id) {
-            const lhs = try alloc.create(Expr);
-            lhs.* = try parseExpr(l, alloc);
-            l.eat(.eql);
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{
-                .bool_ = .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
-            };
-        }
-
-        panic("Not yet implemented for functions", .{});
-    }
 };
 
 fn arena_alloc() ArenaAllocator {
