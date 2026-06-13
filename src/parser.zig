@@ -73,7 +73,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     /// or more
-    fn parse_begin_with_id_or_int_or_bool(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_arith_or_bool_expr(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
@@ -111,6 +111,10 @@ pub const Parser = struct {
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
             l.nexti();
+        } else if (l.token == .oparen) {
+            l.nexti();
+            lhs.* = try parse_expr(l, alloc);
+            l.eat(.cparen);
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
         while (l.tokenType == .arith_op or l.tokenType == .bool_op or l.token == .dot) {
@@ -146,6 +150,12 @@ pub const Parser = struct {
                 .str => blk: {
                     l.nexti();
                     break :blk Expr.create_arith(.{ .str = current_name }, l);
+                },
+                .oparen => blk: {
+                    l.nexti();
+                    const expr = try parse_expr(l, alloc);
+                    l.eat(.cparen);
+                    break :blk expr;
                 },
                 else => blk: {
                     const expr = try parse_expr(l, alloc);
@@ -199,46 +209,6 @@ pub const Parser = struct {
         return args;
     }
 
-    fn parse_begin_with_oparen(l: *Lexer, alloc: Allocator) !Expr {
-        l.eat(.oparen);
-
-        const lhs = try alloc.create(Expr);
-        lhs.* = try parse_expr(l, alloc);
-        const next_l = l.nextl();
-
-        switch (next_l.tokenType) {
-            .bool_op => {
-                l.nexti();
-                const token = l.token;
-                l.nexti();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parse_expr(l, alloc);
-                const op: BoolExpr = switch (token) {
-                    .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return Expr.create_bool(op, l);
-            },
-            .arith_op => {
-                l.nexti();
-                const token = l.token;
-                l.nexti();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parse_expr(l, alloc);
-                const op: ArithExpr = switch (token) {
-                    .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                    .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
-                    .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return Expr.create_arith(op, l);
-            },
-            else => {},
-        }
-
-        return lhs.*;
-    }
-
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .let => {
@@ -249,8 +219,8 @@ pub const Parser = struct {
                 l.nexti();
                 return parse_if(l, alloc);
             },
-            .id, .int, .bool_, .str => {
-                return parse_begin_with_id_or_int_or_bool(l, alloc);
+            .id, .int, .bool_, .str, .oparen => {
+                return parse_arith_or_bool_expr(l, alloc);
             },
             .self_fn => {
                 const name = l.name.as_str(l.content);
@@ -259,12 +229,6 @@ pub const Parser = struct {
                 const args = try parse_args(l, alloc);
                 l.eat(.cparen);
                 return Expr.create_fn_call(name, args, l);
-            },
-            // an open paren (not in the context of a function)
-            .oparen => {
-                const expr = parse_begin_with_oparen(l, alloc);
-                l.eat(.cparen);
-                return expr;
             },
             .bind => {
                 return parse_bind(l, alloc);
