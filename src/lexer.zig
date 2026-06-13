@@ -140,7 +140,8 @@ pub const Lexer = struct {
 
     /// like next but ignore the output
     pub fn nexti(l: *Lexer) void {
-        _ = l.next();
+        const found = l.next();
+        std.debug.assert(found);
     }
 
     /// Return a new lexer with the token set
