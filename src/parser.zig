@@ -270,12 +270,6 @@ pub const Parser = struct {
                 l.eat(.cparen);
                 return Expr.create_fn_call(name, args, l);
             },
-            // an open paren (not in the context of a function)
-            // .oparen => {
-            //     const expr = parse_begin_with_oparen(l, alloc);
-            //     l.eat(.cparen);
-            //     return expr;
-            // },
             .bind => {
                 return parse_bind(l, alloc);
             },
