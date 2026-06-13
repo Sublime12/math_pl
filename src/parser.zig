@@ -73,7 +73,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     /// or more
-    fn parse_begin_with_id_or_int_or_bool(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_begin_with_id_or_int_or_bool_or_oparen(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
@@ -111,6 +111,10 @@ pub const Parser = struct {
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
             l.nexti();
+        } else if (l.token == .oparen) { 
+            l.nexti();
+            lhs.* = try parse_expr(l, alloc);
+            l.eat(.cparen);
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
         while (l.tokenType == .arith_op or l.tokenType == .bool_op or l.token == .dot) {
@@ -146,6 +150,12 @@ pub const Parser = struct {
                 .str => blk: {
                     l.nexti();
                     break :blk Expr.create_arith(.{ .str = current_name }, l);
+                },
+                .oparen => blk: {
+                    l.nexti();
+                    const expr = try parse_expr(l, alloc);
+                    l.eat(.cparen);
+                    break :blk expr;
                 },
                 else => blk: {
                     const expr = try parse_expr(l, alloc);
@@ -249,8 +259,8 @@ pub const Parser = struct {
                 l.nexti();
                 return parse_if(l, alloc);
             },
-            .id, .int, .bool_, .str => {
-                return parse_begin_with_id_or_int_or_bool(l, alloc);
+            .id, .int, .bool_, .str, .oparen => {
+                return parse_begin_with_id_or_int_or_bool_or_oparen(l, alloc);
             },
             .self_fn => {
                 const name = l.name.as_str(l.content);
@@ -261,11 +271,11 @@ pub const Parser = struct {
                 return Expr.create_fn_call(name, args, l);
             },
             // an open paren (not in the context of a function)
-            .oparen => {
-                const expr = parse_begin_with_oparen(l, alloc);
-                l.eat(.cparen);
-                return expr;
-            },
+            // .oparen => {
+            //     const expr = parse_begin_with_oparen(l, alloc);
+            //     l.eat(.cparen);
+            //     return expr;
+            // },
             .bind => {
                 return parse_bind(l, alloc);
             },
