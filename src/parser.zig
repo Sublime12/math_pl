@@ -37,7 +37,7 @@ pub const Parser = struct {
         var program: std.ArrayList(Expr) = .empty;
         var i: i32 = 0;
         while (self.lexer.token != .end) {
-            const expr = try parseExpr(self.lexer, self.alloc);
+            const expr = try parse_expr(self.lexer, self.alloc);
             self.lexer.eat(.semicolon);
             try program.append(self.alloc, expr);
             i += 1;
@@ -45,7 +45,7 @@ pub const Parser = struct {
         return Expr.create_list(program, self.lexer);
     }
 
-    fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_fn_def(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.id);
         const id = l.name.as_str(l.content);
         l.nexti();
@@ -59,7 +59,7 @@ pub const Parser = struct {
         l.eat(.arrow);
 
         const body = try alloc.create(Expr);
-        body.* = try parseExpr(l, alloc);
+        body.* = try parse_expr(l, alloc);
 
         const fn_expr: FnExpr = .{
             .name = id,
@@ -72,7 +72,8 @@ pub const Parser = struct {
     /// can be an arith expr a + 1 - 3
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
-    fn parseBeginWithIdOrIntOrBool(l: *Lexer, alloc: Allocator) !Expr {
+    /// or more
+    fn parse_begin_with_id_or_int_or_bool(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
@@ -80,7 +81,7 @@ pub const Parser = struct {
             lhs.* = switch (next_l.token) {
                 .oparen => blk: {
                     l.nexti();
-                    const expr = try parseFnCall(l, alloc, name);
+                    const expr = try parse_fn_call(l, alloc, name);
                     break :blk expr;
                 },
                 .dot => blk: {
@@ -128,7 +129,7 @@ pub const Parser = struct {
             rhs.* = switch (l.token) {
                 .id => if (next_l.token == .oparen) blk: {
                     l.nexti();
-                    const expr = try parseFnCall(l, alloc, current_name);
+                    const expr = try parse_fn_call(l, alloc, current_name);
                     break :blk expr;
                 } else blk: {
                     l.nexti();
@@ -147,7 +148,7 @@ pub const Parser = struct {
                     break :blk Expr.create_arith(.{ .str = current_name }, l);
                 },
                 else => blk: {
-                    const expr = try parseExpr(l, alloc);
+                    const expr = try parse_expr(l, alloc);
                     break :blk expr;
                 },
             };
@@ -181,28 +182,28 @@ pub const Parser = struct {
         return lhs.*;
     }
 
-    fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
+    fn parse_fn_call(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
         l.eat(.oparen);
-        const args = try parseArgs(l, alloc);
+        const args = try parse_args(l, alloc);
         l.eat(.cparen);
         return Expr.create_fn_call(name, args, l);
     }
 
-    pub fn parseArgs(l: *Lexer, alloc: Allocator) !ArgsExpr {
+    pub fn parse_args(l: *Lexer, alloc: Allocator) !ArgsExpr {
         var args: std.ArrayList(Expr) = .empty;
         while (l.token != .cparen) {
-            const arg = try parseExpr(l, alloc);
+            const arg = try parse_expr(l, alloc);
             try args.append(alloc, arg);
             l.eat(.comma);
         }
         return args;
     }
 
-    fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_begin_with_oparen(l: *Lexer, alloc: Allocator) !Expr {
         l.eat(.oparen);
 
         const lhs = try alloc.create(Expr);
-        lhs.* = try parseExpr(l, alloc);
+        lhs.* = try parse_expr(l, alloc);
         const next_l = l.nextl();
 
         switch (next_l.tokenType) {
@@ -211,7 +212,7 @@ pub const Parser = struct {
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
+                rhs.* = try parse_expr(l, alloc);
                 const op: BoolExpr = switch (token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
@@ -223,7 +224,7 @@ pub const Parser = struct {
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
+                rhs.* = try parse_expr(l, alloc);
                 const op: ArithExpr = switch (token) {
                     .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
                     .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
@@ -238,41 +239,41 @@ pub const Parser = struct {
         return lhs.*;
     }
 
-    fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
+    fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .let => {
                 l.nexti();
-                return parseFnDef(l, alloc);
+                return parse_fn_def(l, alloc);
             },
             .if_ => {
                 l.nexti();
-                return parseIf(l, alloc);
+                return parse_if(l, alloc);
             },
             .id, .int, .bool_, .str => {
-                return parseBeginWithIdOrIntOrBool(l, alloc);
+                return parse_begin_with_id_or_int_or_bool(l, alloc);
             },
             .self_fn => {
                 const name = l.name.as_str(l.content);
                 l.nexti();
                 l.eat(.oparen);
-                const args = try parseArgs(l, alloc);
+                const args = try parse_args(l, alloc);
                 l.eat(.cparen);
                 return Expr.create_fn_call(name, args, l);
             },
             // an open paren (not in the context of a function)
             .oparen => {
-                const expr = parseBeginWithOParen(l, alloc);
+                const expr = parse_begin_with_oparen(l, alloc);
                 l.eat(.cparen);
                 return expr;
             },
             .bind => {
-                return parseBind(l, alloc);
+                return parse_bind(l, alloc);
             },
             .at => {
-                return parseStructInstance(l, alloc);
+                return parse_struct_instance(l, alloc);
             },
             .struct_ => {
-                return parseStruct(l, alloc);
+                return parse_struct(l, alloc);
             },
             else => {},
         }
@@ -283,7 +284,7 @@ pub const Parser = struct {
         );
     }
 
-    fn parseStructInstance(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_struct_instance(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
         const name = l.name.as_str(l.content);
@@ -299,7 +300,7 @@ pub const Parser = struct {
             l.nexti();
             l.eat(.assign);
 
-            const value = try parseExpr(l, alloc);
+            const value = try parse_expr(l, alloc);
             l.eat(.comma);
             try fields.putNoClobber(alloc, field, value);
         }
@@ -307,7 +308,7 @@ pub const Parser = struct {
         return Expr.create_struct_instance(name, fields, l);
     }
 
-    fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_struct(l: *Lexer, alloc: Allocator) !Expr {
         l.eat(.struct_);
         l.expect(.id);
         const struct_name = l.name.as_str(l.content);
@@ -328,7 +329,7 @@ pub const Parser = struct {
         return Expr.create_struct(struct_name, fields, l);
     }
 
-    fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_bind(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
         const id = l.name.as_str(l.content);
@@ -336,24 +337,24 @@ pub const Parser = struct {
 
         l.eat(.assign);
         const body = try alloc.create(Expr);
-        body.* = try parseExpr(l, alloc);
+        body.* = try parse_expr(l, alloc);
         l.eat(.in);
 
         const closure = try alloc.create(Expr);
-        closure.* = try parseExpr(l, alloc);
+        closure.* = try parse_expr(l, alloc);
 
         return Expr.create_bind(id, body, closure, l);
     }
 
-    fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_if(l: *Lexer, alloc: Allocator) !Expr {
         const eval = try alloc.create(Expr);
-        eval.* = try parseExpr(l, alloc);
+        eval.* = try parse_expr(l, alloc);
         l.eat(.then);
         const then = try alloc.create(Expr);
-        then.* = try parseExpr(l, alloc);
+        then.* = try parse_expr(l, alloc);
         l.eat(.else_);
         const else_ = try alloc.create(Expr);
-        else_.* = try parseExpr(l, alloc);
+        else_.* = try parse_expr(l, alloc);
 
         return Expr.create_if(eval, then, else_, l);
     }

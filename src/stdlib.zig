@@ -14,7 +14,7 @@ const FnCallCtx = expression_pkg.Context;
 
 const assert = std.debug.assert;
 
-pub fn registerFunctions(alloc: Allocator, funs: *Funs) !void {
+pub fn register_functions(alloc: Allocator, funs: *Funs) !void {
     {
         var print_args: std.ArrayList([]const u8) = .empty;
         try print_args.append(alloc, "c");

@@ -20,7 +20,7 @@ const BindExpr = expression_pkg.BindExpr;
 
 const panic = std.debug.panic;
 
-const register_functions = stdlib_pkg.registerFunctions;
+const register_functions = stdlib_pkg.register_functions;
 
 // Because functions are meant to be fun to use :)
 pub const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
