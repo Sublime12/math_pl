@@ -111,7 +111,7 @@ pub const Parser = struct {
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
             l.nexti();
-        } else if (l.token == .oparen) { 
+        } else if (l.token == .oparen) {
             l.nexti();
             lhs.* = try parse_expr(l, alloc);
             l.eat(.cparen);
@@ -207,46 +207,6 @@ pub const Parser = struct {
             l.eat(.comma);
         }
         return args;
-    }
-
-    fn parse_begin_with_oparen(l: *Lexer, alloc: Allocator) !Expr {
-        l.eat(.oparen);
-
-        const lhs = try alloc.create(Expr);
-        lhs.* = try parse_expr(l, alloc);
-        const next_l = l.nextl();
-
-        switch (next_l.tokenType) {
-            .bool_op => {
-                l.nexti();
-                const token = l.token;
-                l.nexti();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parse_expr(l, alloc);
-                const op: BoolExpr = switch (token) {
-                    .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return Expr.create_bool(op, l);
-            },
-            .arith_op => {
-                l.nexti();
-                const token = l.token;
-                l.nexti();
-                const rhs = try alloc.create(Expr);
-                rhs.* = try parse_expr(l, alloc);
-                const op: ArithExpr = switch (token) {
-                    .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
-                    .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
-                    .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
-                    else => panic("panic bool begin with", .{}),
-                };
-                return Expr.create_arith(op, l);
-            },
-            else => {},
-        }
-
-        return lhs.*;
     }
 
     fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
