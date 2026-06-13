@@ -4,6 +4,7 @@ const eval_pkg = @import("eval.zig");
 const lexer_pkg = @import("lexer.zig");
 
 const Cursor = lexer_pkg.Cursor;
+const Lexer = lexer_pkg.Lexer;
 const Vars = eval_pkg.Vars;
 
 const FnExprTag = enum { fn_std, fn_binding };
@@ -16,14 +17,6 @@ pub const FnExpr = struct {
     name: []const u8,
     args: std.ArrayList([]const u8),
     body: FnBody,
-
-    pub fn init(name: []const u8, args: std.ArrayList([]const u8), body: *const Expr) FnExpr {
-        return .{
-            .name = name,
-            .args = args,
-            .body = FnBody.init(body),
-        };
-    }
 
     pub fn print(self: Self) void {
         std.debug.print("let {s} = fn ", .{self.name});
@@ -114,6 +107,142 @@ pub const Expr = struct {
     cursor: Cursor,
     content: []const u8,
     file_path: []const u8,
+
+    pub fn create_if(eval: *Expr, then: *Expr, else_: *Expr, l: *const Lexer) Expr {
+        return .{
+            .as = .{
+                .if_ = .{
+                    .eval = eval,
+                    .then = then,
+                    .else_ = else_,
+                },
+            },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_bind(
+        id: []const u8,
+        body: *Expr,
+        closure: *Expr,
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .bind = .{
+                .id = id,
+                .body = body,
+                .closure = closure,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_struct(
+        name: []const u8,
+        fields: std.ArrayList([]const u8),
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .struct_ = .{
+                .name = name,
+                .fields = fields,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_struct_instance(
+        name: []const u8,
+        fields: std.StringHashMapUnmanaged(Expr),
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_fn_call(
+        name: []const u8,
+        args: std.ArrayList(Expr),
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .fn_call = .{ .name = name, .args = args } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_arith(op: ArithExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .arith = op },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_bool(op: BoolExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .bool_ = op },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_list(program: std.ArrayList(Expr), l: *const Lexer) Expr {
+        return .{
+            .as = .{ .list = program },
+            .cursor = l.cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_fn_def(fn_expr: FnExpr, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .fn_def = fn_expr },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_var(name: []const u8, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .var_ = name },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
+    pub fn create_field_access(
+        lhs_dot: *Expr,
+        field: []const u8,
+        l: *const Lexer,
+    ) Expr {
+        return .{
+            .as = .{ .field_access = .{
+                .lhs = lhs_dot,
+                .field = field,
+            } },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
 };
 
 const ExprAs = union(ExprTag) {
@@ -132,26 +261,26 @@ const ExprAs = union(ExprTag) {
     field_access: FieldAccessExpr,
     void_: void,
 
-    pub fn isInt(self: Self) bool {
+    pub fn is_int(self: Self) bool {
         if (self.tag() != .arith) return false;
         return self.arith.tag() == .constant;
     }
 
-    pub fn isStr(self: Self) bool {
+    pub fn is_str(self: Self) bool {
         if (self.tag() != .arith) return false;
         return self.arith.tag() == .str;
     }
 
-    pub fn isBool(self: Self) bool {
+    pub fn is_bool(self: Self) bool {
         if (self.tag() != .bool_) return false;
         return self.bool_.tag() == .constant;
     }
 
-    pub fn isStructInstance(self: Self) bool {
+    pub fn is_struct_instance(self: Self) bool {
         return self.tag() == .struct_instance;
     }
 
-    pub fn isVoid(self: Self) bool {
+    pub fn is_void(self: Self) bool {
         return self.tag() == .void_;
     }
 

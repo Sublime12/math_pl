@@ -20,7 +20,7 @@ const BindExpr = expression_pkg.BindExpr;
 
 const panic = std.debug.panic;
 
-const registerFunctions = stdlib_pkg.registerFunctions;
+const register_functions = stdlib_pkg.register_functions;
 
 // Because functions are meant to be fun to use :)
 pub const Funs = std.StringArrayHashMapUnmanaged(FnExpr);
@@ -46,7 +46,7 @@ const Context = struct {
     }
 };
 
-pub fn semAnal(program: Expr, ctx: Context) void {
+pub fn sema(program: Expr, ctx: Context) void {
     switch (program.as) {
         // base case
         .struct_instance => |struct_inst| {
@@ -67,8 +67,8 @@ pub fn semAnal(program: Expr, ctx: Context) void {
         .arith => |arith_expr| {
             switch (arith_expr) {
                 .plus, .minus, .prod => |expr| {
-                    semAnal(expr.lhs.*, ctx);
-                    semAnal(expr.rhs.*, ctx);
+                    sema(expr.lhs.*, ctx);
+                    sema(expr.rhs.*, ctx);
                 },
                 .constant, .str => {},
             }
@@ -76,37 +76,37 @@ pub fn semAnal(program: Expr, ctx: Context) void {
         .bool_ => |bool_expr| {
             switch (bool_expr) {
                 .eql, .gt, .lt => |expr| {
-                    semAnal(expr.lhs.*, ctx);
-                    semAnal(expr.rhs.*, ctx);
+                    sema(expr.lhs.*, ctx);
+                    sema(expr.rhs.*, ctx);
                 },
                 .constant => {},
             }
         },
         .bind => |bind_expr| {
-            semAnal(bind_expr.body.*, ctx);
-            semAnal(bind_expr.closure.*, ctx);
+            sema(bind_expr.body.*, ctx);
+            sema(bind_expr.closure.*, ctx);
         },
-        .field_access => |field_expr| semAnal(field_expr.lhs.*, ctx),
+        .field_access => |field_expr| sema(field_expr.lhs.*, ctx),
         .fn_call => |fn_call_expr| {
             for (fn_call_expr.args.items) |arg| {
-                semAnal(arg, ctx);
+                sema(arg, ctx);
             }
         },
         .fn_def => |fn_def_expr| {
             switch (fn_def_expr.body) {
-                .fn_std => |fn_std| semAnal(fn_std.body.*, ctx),
+                .fn_std => |fn_std| sema(fn_std.body.*, ctx),
                 .fn_binding => {},
             }
         },
         .list => |list_expr| {
             for (list_expr.items) |sub_expr| {
-                semAnal(sub_expr, ctx);
+                sema(sub_expr, ctx);
             }
         },
         .if_ => |if_expr| {
-            semAnal(if_expr.eval.*, ctx);
-            semAnal(if_expr.then.*, ctx);
-            semAnal(if_expr.else_.*, ctx);
+            sema(if_expr.eval.*, ctx);
+            sema(if_expr.then.*, ctx);
+            sema(if_expr.else_.*, ctx);
         },
         .struct_, .var_, .void_ => {},
     }
@@ -119,7 +119,7 @@ fn contains(item: []const u8, values: std.ArrayList([]const u8)) bool {
     return false;
 }
 
-fn assertOfType(value: Expr, ok: bool) void {
+fn assert_of_type(value: Expr, ok: bool) void {
     if (!ok) {
         std.debug.print("\n{s}:{}:{} runtime error\n", .{
             value.file_path,
@@ -130,13 +130,13 @@ fn assertOfType(value: Expr, ok: bool) void {
     }
 }
 
-pub fn buildContext(
+pub fn build_context(
     program: Expr,
     alloc: Allocator,
     content: []const u8,
     file_path: []const u8,
 ) !Context {
-    assertOfType(program, program.as.tag() == .list);
+    assert_of_type(program, program.as.tag() == .list);
     var functions: Funs = .empty;
     for (program.as.list.items) |expr| {
         if (expr.as.tag() == .fn_def) {
@@ -144,7 +144,7 @@ pub fn buildContext(
         }
     }
 
-    try registerFunctions(alloc, &functions);
+    try register_functions(alloc, &functions);
 
     var ctx: Context = .{
         .funs = functions,
@@ -235,7 +235,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
         },
         .field_access => |field_access| {
             const elhs = eval(field_access.lhs.*, ctx, local_vars);
-            assertOfType(elhs, elhs.as.tag() == .struct_instance);
+            assert_of_type(elhs, elhs.as.tag() == .struct_instance);
             return elhs.as.struct_instance.fields.get(field_access.field) orelse {
                 panic("tried accessing {s} in struct {s} but do not exist", .{
                     field_access.field,
@@ -252,15 +252,15 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
     const id = bind.id;
     const ebody = eval(bind.body.*, ctx, local_vars);
     const body: Var =
-        if (ebody.as.isInt())
+        if (ebody.as.is_int())
             .{ .int = ebody.as.arith.constant }
-        else if (ebody.as.isBool())
+        else if (ebody.as.is_bool())
             .{ .bool_ = ebody.as.bool_.constant }
-        else if (ebody.as.isStructInstance())
+        else if (ebody.as.is_struct_instance())
             .{ .struct_instance = ebody.as.struct_instance }
-        else if (ebody.as.isStr())
+        else if (ebody.as.is_str())
             .{ .str = ebody.as.arith.str }
-        else if (ebody.as.isVoid())
+        else if (ebody.as.is_void())
             .{ .void_ = {} }
         else
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
@@ -274,7 +274,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
-    assertOfType(.{
+    assert_of_type(.{
         .as = .{ .fn_def = fn_def },
         .cursor = cursor,
         .content = ctx.content,
@@ -285,7 +285,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
         const arg_eval = eval(arg, ctx, local_vars);
-        assertOfType(arg_eval, arg_eval.as.tag() == .bool_ or arg_eval.as.tag() == .arith);
+        assert_of_type(arg_eval, arg_eval.as.tag() == .bool_ or arg_eval.as.tag() == .arith);
         const var_: Var = if (arg_eval.as.tag() == .bool_)
             .{ .bool_ = arg_eval.as.bool_.constant }
         else if (arg_eval.as.tag() == .arith and arg_eval.as.arith.tag() == .constant)
@@ -352,8 +352,8 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Ex
 
 fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     const cond = eval(expr.eval.*, ctx, local_vars);
-    assertOfType(cond, cond.as.tag() == .bool_);
-    assertOfType(cond, cond.as.bool_.tag() == .constant);
+    assert_of_type(cond, cond.as.tag() == .bool_);
+    assert_of_type(cond, cond.as.bool_.tag() == .constant);
     return if (cond.as.bool_.constant)
         eval(expr.then.*, ctx, local_vars)
     else
@@ -372,10 +372,10 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
             const lhs = eval(op.lhs.*, ctx, local_vars);
             const rhs = eval(op.rhs.*, ctx, local_vars);
 
-            assertOfType(lhs, lhs.as.tag() == .arith);
-            assertOfType(rhs, rhs.as.tag() == .arith);
-            assertOfType(lhs, lhs.as.arith == .constant);
-            assertOfType(rhs, rhs.as.arith == .constant);
+            assert_of_type(lhs, lhs.as.tag() == .arith);
+            assert_of_type(rhs, rhs.as.tag() == .arith);
+            assert_of_type(lhs, lhs.as.arith == .constant);
+            assert_of_type(rhs, rhs.as.arith == .constant);
             return switch (expr) {
                 .prod => .{
                     .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } },
@@ -419,9 +419,9 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Exp
             const lhs = eval(eql_expr.lhs.*, ctx, local_vars);
             const rhs = eval(eql_expr.rhs.*, ctx, local_vars);
 
-            assertOfType(lhs, lhs.as.tag() == .bool_ or lhs.as.tag() == .arith);
-            assertOfType(rhs, rhs.as.tag() == .bool_ or rhs.as.tag() == .arith);
-            assertOfType(lhs, lhs.as.tag() == rhs.as.tag());
+            assert_of_type(lhs, lhs.as.tag() == .bool_ or lhs.as.tag() == .arith);
+            assert_of_type(rhs, rhs.as.tag() == .bool_ or rhs.as.tag() == .arith);
+            assert_of_type(lhs, lhs.as.tag() == rhs.as.tag());
 
             return .{
                 .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } },

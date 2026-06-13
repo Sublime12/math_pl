@@ -37,60 +37,51 @@ pub const Parser = struct {
         var program: std.ArrayList(Expr) = .empty;
         var i: i32 = 0;
         while (self.lexer.token != .end) {
-            const expr = try parseExpr(self.lexer, self.alloc);
+            const expr = try parse_expr(self.lexer, self.alloc);
             self.lexer.eat(.semicolon);
             try program.append(self.alloc, expr);
             i += 1;
         }
-        return .{
-            .as = .{ .list = program },
-            .cursor = self.lexer.cursor,
-            .content = self.lexer.content,
-            .file_path = self.lexer.file_path,
-        };
+        return Expr.create_list(program, self.lexer);
     }
 
-    fn parseFnDef(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_fn_def(l: *Lexer, alloc: Allocator) !Expr {
         l.expect(.id);
-        const id = l.name.asStr(l.content);
+        const id = l.name.as_str(l.content);
         l.nexti();
         l.eat(.assign);
         l.eat(.fn_);
         var args = std.ArrayList([]const u8).empty;
         while (l.token == .id) {
-            try args.append(alloc, l.name.asStr(l.content));
+            try args.append(alloc, l.name.as_str(l.content));
             l.nexti();
         }
         l.eat(.arrow);
 
         const body = try alloc.create(Expr);
-        body.* = try parseExpr(l, alloc);
+        body.* = try parse_expr(l, alloc);
 
         const fn_expr: FnExpr = .{
             .name = id,
             .args = args,
             .body = .{ .fn_std = .{ .body = body } },
         };
-        return .{
-            .as = .{ .fn_def = fn_expr },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        return Expr.create_fn_def(fn_expr, l);
     }
 
     /// can be an arith expr a + 1 - 3
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
-    fn parseBeginWithIdOrIntOrBool(l: *Lexer, alloc: Allocator) !Expr {
-        const name = l.name.asStr(l.content);
+    /// or more
+    fn parse_begin_with_id_or_int_or_bool(l: *Lexer, alloc: Allocator) !Expr {
+        const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
         if (l.token == .id) {
             lhs.* = switch (next_l.token) {
                 .oparen => blk: {
                     l.nexti();
-                    const expr = try parseFnCall(l, alloc, name);
+                    const expr = try parse_fn_call(l, alloc, name);
                     break :blk expr;
                 },
                 .dot => blk: {
@@ -98,58 +89,27 @@ pub const Parser = struct {
                     l.eat(.dot);
 
                     l.expect(.id);
-                    const field = l.name.asStr(l.content);
+                    const field = l.name.as_str(l.content);
                     l.nexti();
 
                     const lhs_dot = try alloc.create(Expr);
-                    lhs_dot.* = .{
-                        .as = .{ .var_ = name },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
-                    const expr: Expr = .{
-                        .as = .{ .field_access = .{ .lhs = lhs_dot, .field = field } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
-                    // l.nexti();
+                    lhs_dot.* = Expr.create_var(name, l);
+                    const expr = Expr.create_field_access(lhs_dot, field, l);
                     break :blk expr;
                 },
                 else => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .var_ = name },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_var(name, l);
                 },
             };
         } else if (l.token == .int) {
-            lhs.* = .{
-                .as = .{ .arith = .{ .constant = l.integer_value.? } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = .{
-                .as = .{ .arith = .{ .str = l.name.asStr(l.content) } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_arith(.{ .str = l.name.as_str(l.content) }, l);
             l.nexti();
         } else if (l.token == .bool_) {
-            lhs.* = .{
-                .as = .{ .bool_ = .{ .constant = l.bool_value.? } },
-                .cursor = l.previous_cursor,
-                .content = l.content,
-                .file_path = l.file_path,
-            };
+            lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
             l.nexti();
         } else if (l.tokenType == .primary) panic("Must be identifier, integer or string or bool", .{});
 
@@ -162,53 +122,33 @@ pub const Parser = struct {
             next_l = l.*;
             next_l.nexti();
 
-            const current_name = l.name.asStr(l.content);
+            const current_name = l.name.as_str(l.content);
             const int_value = l.integer_value;
             const bool_value = l.bool_value;
 
             rhs.* = switch (l.token) {
                 .id => if (next_l.token == .oparen) blk: {
                     l.nexti();
-                    const expr = try parseFnCall(l, alloc, current_name);
+                    const expr = try parse_fn_call(l, alloc, current_name);
                     break :blk expr;
                 } else blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .var_ = current_name },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_var(current_name, l);
                 },
                 .int => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .arith = .{ .constant = int_value.? } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_arith(.{ .constant = int_value.? }, l);
                 },
                 .bool_ => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .bool_ = .{ .constant = bool_value.? } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_bool(.{ .constant = bool_value.? }, l);
                 },
                 .str => blk: {
                     l.nexti();
-                    break :blk .{
-                        .as = .{ .arith = .{ .str = current_name } },
-                        .cursor = l.previous_cursor,
-                        .content = l.content,
-                        .file_path = l.file_path,
-                    };
+                    break :blk Expr.create_arith(.{ .str = current_name }, l);
                 },
                 else => blk: {
-                    const expr = try parseExpr(l, alloc);
+                    const expr = try parse_expr(l, alloc);
                     break :blk expr;
                 },
             };
@@ -222,12 +162,7 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .arith = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = Expr.create_arith(op, l);
             } else if (op_token_type == .bool_op) {
                 const op: BoolExpr = switch (op_token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
@@ -235,55 +170,40 @@ pub const Parser = struct {
                 };
 
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .bool_ = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = Expr.create_bool(op, l);
             } else if (op_token == .dot) {
-                const op: FieldAccessExpr = .{ .lhs = lhs, .field = rhs.as.var_ };
+                const field = rhs.as.var_;
+                const field_access_expr = Expr.create_field_access(lhs, field, l);
                 lhs = try alloc.create(Expr);
-                lhs.* = .{
-                    .as = .{ .field_access = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                lhs.* = field_access_expr;
             }
         }
 
         return lhs.*;
     }
 
-    fn parseFnCall(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
+    fn parse_fn_call(l: *Lexer, alloc: Allocator, name: []const u8) !Expr {
         l.eat(.oparen);
-        const args = try parseArgs(l, alloc);
+        const args = try parse_args(l, alloc);
         l.eat(.cparen);
-        const lhs: Expr = .{
-            .as = .{ .fn_call = .{ .name = name, .args = args } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
-        return lhs;
+        return Expr.create_fn_call(name, args, l);
     }
 
-    pub fn parseArgs(l: *Lexer, alloc: Allocator) !ArgsExpr {
+    pub fn parse_args(l: *Lexer, alloc: Allocator) !ArgsExpr {
         var args: std.ArrayList(Expr) = .empty;
         while (l.token != .cparen) {
-            const arg = try parseExpr(l, alloc);
+            const arg = try parse_expr(l, alloc);
             try args.append(alloc, arg);
             l.eat(.comma);
         }
         return args;
     }
 
-    fn parseBeginWithOParen(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_begin_with_oparen(l: *Lexer, alloc: Allocator) !Expr {
         l.eat(.oparen);
 
         const lhs = try alloc.create(Expr);
-        lhs.* = try parseExpr(l, alloc);
+        lhs.* = try parse_expr(l, alloc);
         const next_l = l.nextl();
 
         switch (next_l.tokenType) {
@@ -292,36 +212,26 @@ pub const Parser = struct {
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
+                rhs.* = try parse_expr(l, alloc);
                 const op: BoolExpr = switch (token) {
                     .eql => .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{
-                    .as = .{ .bool_ = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_bool(op, l);
             },
             .arith_op => {
                 l.nexti();
                 const token = l.token;
                 l.nexti();
                 const rhs = try alloc.create(Expr);
-                rhs.* = try parseExpr(l, alloc);
+                rhs.* = try parse_expr(l, alloc);
                 const op: ArithExpr = switch (token) {
                     .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
                     .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
                     .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
                     else => panic("panic bool begin with", .{}),
                 };
-                return .{
-                    .as = .{ .arith = op },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_arith(op, l);
             },
             else => {},
         }
@@ -329,60 +239,55 @@ pub const Parser = struct {
         return lhs.*;
     }
 
-    fn parseExpr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
+    fn parse_expr(l: *Lexer, alloc: Allocator) error{OutOfMemory}!Expr {
         switch (l.token) {
             .let => {
                 l.nexti();
-                return parseFnDef(l, alloc);
+                return parse_fn_def(l, alloc);
             },
             .if_ => {
                 l.nexti();
-                return parseIf(l, alloc);
+                return parse_if(l, alloc);
             },
             .id, .int, .bool_, .str => {
-                return parseBeginWithIdOrIntOrBool(l, alloc);
+                return parse_begin_with_id_or_int_or_bool(l, alloc);
             },
             .self_fn => {
-                const name = l.name.asStr(l.content);
+                const name = l.name.as_str(l.content);
                 l.nexti();
                 l.eat(.oparen);
-                const args = try parseArgs(l, alloc);
+                const args = try parse_args(l, alloc);
                 l.eat(.cparen);
-                return .{
-                    .as = .{ .fn_call = .{ .name = name, .args = args } },
-                    .cursor = l.previous_cursor,
-                    .content = l.content,
-                    .file_path = l.file_path,
-                };
+                return Expr.create_fn_call(name, args, l);
             },
             // an open paren (not in the context of a function)
             .oparen => {
-                const expr = parseBeginWithOParen(l, alloc);
+                const expr = parse_begin_with_oparen(l, alloc);
                 l.eat(.cparen);
                 return expr;
             },
             .bind => {
-                return parseBind(l, alloc);
+                return parse_bind(l, alloc);
             },
             .at => {
-                return parseStructInstance(l, alloc);
+                return parse_struct_instance(l, alloc);
             },
             .struct_ => {
-                return parseStruct(l, alloc);
+                return parse_struct(l, alloc);
             },
             else => {},
         }
 
         panic(
             "Panic with token {}, value: {s}",
-            .{ l.token, l.name.asStr(l.content) },
+            .{ l.token, l.name.as_str(l.content) },
         );
     }
 
-    fn parseStructInstance(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_struct_instance(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
-        const name = l.name.asStr(l.content);
+        const name = l.name.as_str(l.content);
         l.nexti();
 
         l.eat(.obrace);
@@ -391,110 +296,67 @@ pub const Parser = struct {
             l.eat(.dot);
 
             l.expect(.id);
-            const field = l.name.asStr(l.content);
+            const field = l.name.as_str(l.content);
             l.nexti();
             l.eat(.assign);
 
-            const value = try parseExpr(l, alloc);
+            const value = try parse_expr(l, alloc);
             l.eat(.comma);
             try fields.putNoClobber(alloc, field, value);
         }
         l.nexti();
-        return .{
-            .as = .{ .struct_instance = .{ .name = name, .fields = fields } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        return Expr.create_struct_instance(name, fields, l);
     }
 
-    fn parseStruct(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_struct(l: *Lexer, alloc: Allocator) !Expr {
         l.eat(.struct_);
         l.expect(.id);
-        const struct_name = l.name.asStr(l.content);
+        const struct_name = l.name.as_str(l.content);
         l.nexti();
         l.eat(.obrace);
 
         var fields: std.ArrayList([]const u8) = .empty;
         while (l.token != .cbrace) {
             l.expect(.id);
-            const field = l.name.asStr(l.content);
+            const field = l.name.as_str(l.content);
             l.nexti();
             try fields.append(alloc, field);
             l.eat(.comma);
         }
 
         l.eat(.cbrace);
-        return .{
-            .as = .{ .struct_ = .{ .name = struct_name, .fields = fields } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+
+        return Expr.create_struct(struct_name, fields, l);
     }
 
-    fn parseBind(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_bind(l: *Lexer, alloc: Allocator) !Expr {
         l.nexti();
         l.expect(.id);
-        const id = l.name.asStr(l.content);
+        const id = l.name.as_str(l.content);
         l.nexti();
 
         l.eat(.assign);
         const body = try alloc.create(Expr);
-        body.* = try parseExpr(l, alloc);
+        body.* = try parse_expr(l, alloc);
         l.eat(.in);
 
         const closure = try alloc.create(Expr);
-        closure.* = try parseExpr(l, alloc);
-        return .{
-            .as = .{ .bind = .{
-                .id = id,
-                .body = body,
-                .closure = closure,
-            } },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
+        closure.* = try parse_expr(l, alloc);
+
+        return Expr.create_bind(id, body, closure, l);
     }
 
-    fn parseIf(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_if(l: *Lexer, alloc: Allocator) !Expr {
         const eval = try alloc.create(Expr);
-        eval.* = try parseExpr(l, alloc);
+        eval.* = try parse_expr(l, alloc);
         l.eat(.then);
         const then = try alloc.create(Expr);
-        then.* = try parseExpr(l, alloc);
+        then.* = try parse_expr(l, alloc);
         l.eat(.else_);
         const else_ = try alloc.create(Expr);
-        else_.* = try parseExpr(l, alloc);
+        else_.* = try parse_expr(l, alloc);
 
-        return .{
-            .as = .{
-                .if_ = .{
-                    .eval = eval,
-                    .then = then,
-                    .else_ = else_,
-                },
-            },
-            .cursor = l.previous_cursor,
-            .content = l.content,
-            .file_path = l.file_path,
-        };
-    }
-
-    fn parseBool(l: *Lexer, alloc: Allocator) !Expr {
-        if (l.token == .id) {
-            const lhs = try alloc.create(Expr);
-            lhs.* = try parseExpr(l, alloc);
-            l.eat(.eql);
-            const rhs = try alloc.create(Expr);
-            rhs.* = try parseExpr(l, alloc);
-            return .{
-                .bool_ = .{ .eql = .{ .lhs = lhs, .rhs = rhs } },
-            };
-        }
-
-        panic("Not yet implemented for functions", .{});
+        return Expr.create_if(eval, then, else_, l);
     }
 };
 
