@@ -367,7 +367,7 @@ pub const Lexer = struct {
         l.cursor.pos += 1;
         l.cursor.col += 1;
 
-        if (isLn(x)) {
+        if (is_ln(x)) {
             l.cursor.bol = l.cursor.pos;
             l.cursor.row += 1;
             l.cursor.col = 0;
@@ -385,7 +385,7 @@ pub const Lexer = struct {
         return l.content[l.cursor.pos + 1];
     }
 
-    fn isLn(c: u8) bool {
+    fn is_ln(c: u8) bool {
         return c == '\n';
     }
 };
