@@ -52,9 +52,10 @@ bind n_double = double(n, ) in
 print_int(n_double,);
 ```
 
---- File: examples/bool.sub ---
---- bind syntax allow to bind a var
---- with a value you can use in the `in` sub expression
+--- File: examples/bool.sub ---\
+--- bind syntax allow to bind a var\
+--- with a value you can use in the `in` sub expression\
+
 ```ocaml
 bind x = true in
 if x then
@@ -69,8 +70,8 @@ let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
 print_int(fact(5, ), ) ;
 ```
 
---- File: examples/getc.sub ---
---- other stdlib function can be registered in stdlib.zig
+--- File: examples/getc.sub ---\
+--- other stdlib function can be registered in stdlib.zig\
 ```ocaml
 print_underscore("bonjour", 0, 7,);
 let print_underscore = fn str n l ->
@@ -83,12 +84,12 @@ let print_underscore = fn str n l ->
 ;
 ```
 
---- File: examples/string.sub ---
---- Strings are parse as seen in the source code
---- the number of \" seen in the beginning of a string is the
---- must match at the end
---- Design of string for now is a little bit imcomplete, i'm
---- going to rework that and think longer about the architecture
+--- File: examples/string.sub ---\
+--- Strings are parse as seen in the source code\
+--- the number of \" seen in the beginning of a string is the\
+--- must match at the end\
+--- Design of string for now is a little bit imcomplete, i'm\
+--- going to rework that and think longer about the architecture\
 ```ocaml
 print_str(""" Hello "sub" """,);
 ```
