@@ -38,7 +38,8 @@ To execute the unit tests defined in the source files:
 
 ## Syntax Rules
 For now, most of the syntax are in the `examples/` folder and in the
-`src/parser.zig` tests, 
+`src/parser.zig` tests,
+Comments for now are not supporting (will be add pretty soon)
 This is a cat of the files `examples/`,
 ```ocaml
 
@@ -84,14 +85,11 @@ let print_underscore = fn str n l ->
 print_str(""" Hello "sub" """,);
 
 --- File: examples/struct.sub ---
---- To create a struct, define a struct with fields, the language is 
+--- To create a struct, define a struct with fields, the language is
 --- untyped, to create an instance use the @ symbol
 bind p = @Point{ .x = 2, .y = @Point{ .x = 69, .y = 15, }, } in
 print_int(p.x + (p.y.x),);
 struct Point {
   x, y,
 };
-
-(base) sublime@sublime:~/Documents/projects/sub_pl
-$
 ```
