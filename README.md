@@ -44,7 +44,7 @@ This is a cat of the files `examples/`,
 
 (base) sublime@sublime:~/Documents/projects/sub_pl
 $ for f in examples/*; do echo "File: $f "; cat "$f"; echo ""; done
-File: examples/bind_var.sub\
+File: examples/bind_var.sub
 ```ocaml
 let double = fn x -> x * 2;
 bind n = 15 + 3 in
@@ -54,7 +54,7 @@ print_int(n_double,);
 
 File: examples/bool.sub\
 bind syntax allow to bind a var\
-with a value you can use in the `in` sub expression\
+with a value you can use in the `in` sub expression
 
 ```ocaml
 bind x = true in
@@ -64,14 +64,14 @@ else
   print_str("bonjour is false",);
 ```
 
-File: examples/fact.sub\
+File: examples/fact.sub
 ```ocaml
 let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
 print_int(fact(5, ), ) ;
 ```
 
 File: examples/getc.sub\
-other stdlib function can be registered in stdlib.zig\
+other stdlib function can be registered in stdlib.zig
 ```ocaml
 print_underscore("bonjour", 0, 7,);
 let print_underscore = fn str n l ->
@@ -89,14 +89,14 @@ Strings are parse as seen in the source code\
 the number of \" seen in the beginning of a string is the\
 must match at the end\
 Design of string for now is a little bit imcomplete, i'm\
-going to rework that and think longer about the architecture\
+going to rework that and think longer about the architecture
 ```ocaml
 print_str(""" Hello "sub" """,);
 ```
 
 File: examples/struct.sub\
 To create a struct, define a struct with fields, the language is\
-untyped, to create an instance use the @ symbol\
+untyped, to create an instance use the @ symbol
 ```ocaml
 bind p = @Point{ .x = 2, .y = @Point{ .x = 69, .y = 15, }, } in
 print_int(p.x + (p.y.x),);
