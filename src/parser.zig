@@ -73,7 +73,7 @@ pub const Parser = struct {
     /// or a bool expr a = 1
     /// or a function call a(b, c, d)
     /// or more
-    fn parse_begin_with_id_or_int_or_bool_or_oparen(l: *Lexer, alloc: Allocator) !Expr {
+    fn parse_arith_or_bool_expr(l: *Lexer, alloc: Allocator) !Expr {
         const name = l.name.as_str(l.content);
         var next_l = l.nextl();
         var lhs = try alloc.create(Expr);
@@ -220,7 +220,7 @@ pub const Parser = struct {
                 return parse_if(l, alloc);
             },
             .id, .int, .bool_, .str, .oparen => {
-                return parse_begin_with_id_or_int_or_bool_or_oparen(l, alloc);
+                return parse_arith_or_bool_expr(l, alloc);
             },
             .self_fn => {
                 const name = l.name.as_str(l.content);
