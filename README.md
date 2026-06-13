@@ -95,9 +95,3 @@ struct Point {
 (base) sublime@sublime:~/Documents/projects/sub_pl
 $
 ```
-
-## Project Structure
-* `src/parser.zig`: Expression parsing.
-* `src/expression.zig`: Abstract Syntax Tree (AST) definitions.
-* `src/eval.zig`: Recursive evaluation logic.
-* `src/main.zig`: Entry point and demonstration.
