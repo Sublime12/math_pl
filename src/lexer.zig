@@ -241,14 +241,11 @@ pub const Lexer = struct {
             },
             '"' => {
                 const nb = l.countDComma();
-                // print("comma count: {}\n", .{nb});
                 l.name.clear(l.cursor.pos - 1);
-                // l.name.extend();
 
                 l.lexString(nb);
                 l.set_token(.str);
                 return true;
-                // panic("unimplemented str token found", .{});
             },
             else => {},
         }
