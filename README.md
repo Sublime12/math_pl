@@ -1,47 +1,106 @@
-# math_pl
+# sub_pl
 
-A lightweight mathematical expression evaluator and programming language parser 
-written in **Zig**. It features a custom lexer, parser, and recursive evaluator 
-for arithmetic, boolean comparisons, and conditional logic.
+A simple functional programming language written from scratch without dependencies.
+This project is `incomplete`, the goal for me is to learn language design and how to
+implement the differents parts of the pipeline of creating a programming language
+(lexing, parsing, sema, error displays, etc).
 
-## Features
+## Syntax
+Example of correct simple programs can be found in `examples/`,
 
-* **Lexer & Parser:** Hand-written recursive descent parser.
-* **Arithmetic:** Supports addition, subtraction, and multiplication.
-* **Conditionals:** `if-then-else` expression support.
-* **Booleans:** Equality comparisons and boolean constants.
-* **Functions:** Syntax support for function definitions and calls (in progress).
+* simple example of factorial:
+```ocaml
+    (base) sublime@sublime:~/Documents/projects/sub_pl
+    $ cat examples/fact.sub
+    let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
+    print_int(fact(5, ), ) ;
+    (base) sublime@sublime:~/Documents/projects/sub_pl
+    $ ./zig-out/bin/sub_pl examples/fact.sub
+    120
+    (base) sublime@sublime:~/Documents/projects/sub_pl
+```
 
 ## Usage
 
 ### Prerequisites
-* **Zig 0.15.2**
-
-### Build 
+* **Zig 0.15.2** (soon migrating to zig 16)
+### Build
 ```bash
-zig build 
+zig build
 ```
 
 ### Run Tests
 To execute the unit tests defined in the source files:
 
 ```bash
-zig build test
+./zig-out/bin/test
 ```
 
-## Example Syntax
-The language handles expressions like:
-For now, the arith expression tree is left associative, there is no priority
-of operations
-You need to put parenthese to change the correct associativeness
+## Syntax Rules
+For now, most of the syntax are in the `examples/` folder and in the
+`src/parser.zig` tests,
+Comments for now are not supporting (will be add pretty soon)
+This is a cat of the files `examples/`,
+
+(base) sublime@sublime:~/Documents/projects/sub_pl
+$ for f in examples/*; do echo "File: $f "; cat "$f"; echo ""; done
+`File: examples/bind_var.sub`
 ```ocaml
-if (3 + 7) == 2 * 1 - 3
-then 1
-else (6 * 3) + 1 - 5
+let double = fn x -> x * 2;
+bind n = 15 + 3 in
+bind n_double = double(n, ) in
+print_int(n_double,);
 ```
 
-## Project Structure
-* `src/parser.zig`: Expression parsing.
-* `src/expression.zig`: Abstract Syntax Tree (AST) definitions.
-* `src/eval.zig`: Recursive evaluation logic.
-* `src/main.zig`: Entry point and demonstration.
+`File: examples/bool.sub`\
+bind syntax allow to bind a var\
+with a value you can use in the `in` sub expression
+
+```ocaml
+bind x = true in
+if x then
+  print_str("bonjour is true",)
+else
+  print_str("bonjour is false",);
+```
+
+`File: examples/fact.sub`
+```ocaml
+let fact = fn n -> if n == 1 then 1 else n * fact(n - 1,);
+print_int(fact(5, ), ) ;
+```
+
+`File: examples/getc.sub`\
+other stdlib function can be registered in stdlib.zig
+```ocaml
+print_underscore("bonjour", 0, 7,);
+let print_underscore = fn str n l ->
+  if n == l then 0
+  else
+    bind c = getc(str, n,) in
+    bind _a = print(c,) in
+    bind _b = print_str("_",) in
+    print_underscore(str, n + 1, l,)
+;
+```
+
+`File: examples/string.sub`\
+Strings are parse as seen in the source code\
+the number of \" seen in the beginning of a string is the\
+must match at the end\
+Design of string for now is a little bit imcomplete, i'm\
+going to rework that and think longer about the architecture
+```ocaml
+print_str(""" Hello "sub" """,);
+```
+
+`File: examples/struct.sub`\
+To create a struct, define a struct with fields, the language is\
+untyped, to create an instance use the @ symbol
+```ocaml
+bind p = @Point{ .x = 2, .y = @Point{ .x = 69, .y = 15, }, } in
+print_int(p.x + (p.y.x),);
+struct Point {
+  x, y,
+};
+```
