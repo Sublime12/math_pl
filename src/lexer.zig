@@ -594,6 +594,7 @@ test "lex if expression" {
     const source_code =
         \\ if 1 + 3 = 7 then
         \\ print_str("" hello "world" "",)
+        \\ elseif true then bonjour
         \\ else double(7) ;
     ;
     var l = Lexer.init(source_code, "test.zig");
@@ -648,6 +649,22 @@ test "lex if expression" {
     l.nexti();
     try expectStrings(")", l.name.as_str(l.content));
     try expectEqual(.cparen, l.token);
+
+    l.nexti();
+    try expectStrings("elseif", l.name.as_str(l.content));
+    try expectEqual(.elseif, l.token);
+
+    l.nexti();
+    try expectStrings("true", l.name.as_str(l.content));
+    try expectEqual(.bool_, l.token);
+
+    l.nexti();
+    try expectStrings("then", l.name.as_str(l.content));
+    try expectEqual(.then, l.token);
+
+    l.nexti();
+    try expectStrings("bonjour", l.name.as_str(l.content));
+    try expectEqual(.id, l.token);
 
     l.nexti();
     try expectStrings("else", l.name.as_str(l.content));
