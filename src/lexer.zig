@@ -118,7 +118,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -134,7 +134,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .primary;
             },
-            // else => |t| panic("setToken not implemented for {}", .{t}),
+            // else => |t| panic("set_token not implemented for {}", .{t}),
         }
     }
 
@@ -411,9 +411,10 @@ const TokenKind = enum {
     // keywords
     arrow,
     fn_,
+    if_,
+    elseif,
     else_,
     let,
-    if_,
     struct_,
     self_fn,
     then,
@@ -448,6 +449,7 @@ const TokenKind = enum {
             .arrow => "->",
             .fn_ => "fn",
             .else_ => "else",
+            .elseif => "elseif",
             .let => "let",
             .if_ => "if",
             .struct_ => "struct",
