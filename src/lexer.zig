@@ -282,6 +282,9 @@ pub const Lexer = struct {
             } else if (eql("else", l.name.as_str(l.content))) {
                 l.set_token(.else_);
                 return true;
+            } else if (eql("elseif", l.name.as_str(l.content))) {
+                l.set_token(.elseif);
+                return true;
             } else if (eql("struct", l.name.as_str(l.content))) {
                 l.set_token(.struct_);
                 return true;
