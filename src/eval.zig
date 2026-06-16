@@ -354,10 +354,16 @@ fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     const cond = eval(expr.eval.*, ctx, local_vars);
     assert_of_type(cond, cond.as.tag() == .bool_);
     assert_of_type(cond, cond.as.bool_.tag() == .constant);
-    return if (cond.as.bool_.constant)
-        eval(expr.then.*, ctx, local_vars)
-    else
-        eval(expr.else_.*, ctx, local_vars);
+    if (cond.as.bool_.constant)
+        return eval(expr.then.*, ctx, local_vars);
+    
+    for (expr.elseif_evals.items, expr.elseif_then.items,) |elseif_eval, elseif_then| {
+        const elseif_cond = eval(elseif_eval, ctx, local_vars);
+        if (elseif_cond.as.bool_.constant) 
+            return eval(elseif_then, ctx, local_vars);
+    }
+    
+    return eval(expr.else_.*, ctx, local_vars);
 }
 
 fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
