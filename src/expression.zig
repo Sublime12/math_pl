@@ -380,6 +380,10 @@ pub const IfExpr = struct {
 
     eval: *Expr,
     then: *Expr,
+
+    elseif_eval: std.ArrayList(Expr) = .empty,
+    elseif_then: std.ArrayList(Expr) = .empty,
+
     else_: *Expr,
 
     pub fn print(self: Self) void {
