@@ -118,7 +118,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -134,7 +134,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .primary;
             },
-            // else => |t| panic("setToken not implemented for {}", .{t}),
+            // else => |t| panic("set_token not implemented for {}", .{t}),
         }
     }
 
@@ -282,6 +282,9 @@ pub const Lexer = struct {
             } else if (eql("else", l.name.as_str(l.content))) {
                 l.set_token(.else_);
                 return true;
+            } else if (eql("elseif", l.name.as_str(l.content))) {
+                l.set_token(.elseif);
+                return true;
             } else if (eql("struct", l.name.as_str(l.content))) {
                 l.set_token(.struct_);
                 return true;
@@ -411,9 +414,10 @@ const TokenKind = enum {
     // keywords
     arrow,
     fn_,
+    if_,
+    elseif,
     else_,
     let,
-    if_,
     struct_,
     self_fn,
     then,
@@ -448,6 +452,7 @@ const TokenKind = enum {
             .arrow => "->",
             .fn_ => "fn",
             .else_ => "else",
+            .elseif => "elseif",
             .let => "let",
             .if_ => "if",
             .struct_ => "struct",
@@ -589,6 +594,7 @@ test "lex if expression" {
     const source_code =
         \\ if 1 + 3 = 7 then
         \\ print_str("" hello "world" "",)
+        \\ elseif true then bonjour
         \\ else double(7) ;
     ;
     var l = Lexer.init(source_code, "test.zig");
@@ -643,6 +649,22 @@ test "lex if expression" {
     l.nexti();
     try expectStrings(")", l.name.as_str(l.content));
     try expectEqual(.cparen, l.token);
+
+    l.nexti();
+    try expectStrings("elseif", l.name.as_str(l.content));
+    try expectEqual(.elseif, l.token);
+
+    l.nexti();
+    try expectStrings("true", l.name.as_str(l.content));
+    try expectEqual(.bool_, l.token);
+
+    l.nexti();
+    try expectStrings("then", l.name.as_str(l.content));
+    try expectEqual(.then, l.token);
+
+    l.nexti();
+    try expectStrings("bonjour", l.name.as_str(l.content));
+    try expectEqual(.id, l.token);
 
     l.nexti();
     try expectStrings("else", l.name.as_str(l.content));
