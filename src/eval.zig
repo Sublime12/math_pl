@@ -356,13 +356,16 @@ fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     assert_of_type(cond, cond.as.bool_.tag() == .constant);
     if (cond.as.bool_.constant)
         return eval(expr.then.*, ctx, local_vars);
-    
-    for (expr.elseif_evals.items, expr.elseif_thens.items,) |elseif_eval, elseif_then| {
+
+    for (
+        expr.elseif_evals.items,
+        expr.elseif_thens.items,
+    ) |elseif_eval, elseif_then| {
         const elseif_cond = eval(elseif_eval, ctx, local_vars);
-        if (elseif_cond.as.bool_.constant) 
+        if (elseif_cond.as.bool_.constant)
             return eval(elseif_then, ctx, local_vars);
     }
-    
+
     return eval(expr.else_.*, ctx, local_vars);
 }
 
