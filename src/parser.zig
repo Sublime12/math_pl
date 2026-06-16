@@ -317,12 +317,12 @@ pub const Parser = struct {
         const then = try alloc.create(Expr);
         then.* = try parse_expr(l, alloc);
 
-        var elseif_eval: std.ArrayList(Expr) = .empty;
+        var elseif_evals: std.ArrayList(Expr) = .empty;
         var elseif_thens: std.ArrayList(Expr) = .empty;
         while (l.token == .elseif) {
             l.eat(.elseif);
-            const elseif = try parse_expr(l, alloc);
-            try elseif_eval.append(alloc, elseif);
+            const elseif_eval = try parse_expr(l, alloc);
+            try elseif_evals.append(alloc, elseif_eval);
             l.eat(.then);
             const elseif_then = try parse_expr(l, alloc);
             try elseif_thens.append(alloc, elseif_then);
@@ -332,7 +332,7 @@ pub const Parser = struct {
         const else_ = try alloc.create(Expr);
         else_.* = try parse_expr(l, alloc);
 
-        return Expr.create_if(eval, then, elseif_eval, elseif_thens, else_, l);
+        return Expr.create_if(eval, then, elseif_evals, elseif_thens, else_, l);
     }
 };
 

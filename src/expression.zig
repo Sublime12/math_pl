@@ -111,8 +111,8 @@ pub const Expr = struct {
     pub fn create_if(
         eval: *Expr,
         then: *Expr,
-        elseif_eval: std.ArrayList(Expr),
-        elseif_then: std.ArrayList(Expr),
+        elseif_evals: std.ArrayList(Expr),
+        elseif_thens: std.ArrayList(Expr),
         else_: *Expr,
         l: *const Lexer,
     ) Expr {
@@ -121,8 +121,8 @@ pub const Expr = struct {
                 .if_ = .{
                     .eval = eval,
                     .then = then,
-                    .elseif_evals = elseif_eval,
-                    .elseif_then = elseif_then,
+                    .elseif_evals = elseif_evals,
+                    .elseif_thens = elseif_thens,
                     .else_ = else_,
                 },
             },
@@ -391,7 +391,7 @@ pub const IfExpr = struct {
     then: *Expr,
 
     elseif_evals: std.ArrayList(Expr),
-    elseif_then: std.ArrayList(Expr),
+    elseif_thens: std.ArrayList(Expr),
 
     else_: *Expr,
 
@@ -401,8 +401,8 @@ pub const IfExpr = struct {
         std.debug.print(") ", .{});
         self.then.as.print();
         std.debug.print("\n", .{});
-        std.debug.assert(self.elseif_evals.items.len == self.elseif_then.items.len);
-        for (self.elseif_evals.items, self.elseif_then.items) |eval, then| {
+        std.debug.assert(self.elseif_evals.items.len == self.elseif_thens.items.len);
+        for (self.elseif_evals.items, self.elseif_thens.items) |eval, then| {
             std.debug.print("elseif (", .{});
             eval.as.print();
             std.debug.print(") ", .{});
