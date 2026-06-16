@@ -41,6 +41,8 @@ pub fn main() !void {
     var parser = Parser.init(&lexer, alloc);
     const expr = try parser.parse();
 
+    expr.as.print();
+
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
