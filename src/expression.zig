@@ -40,9 +40,9 @@ pub const BindExpr = struct {
 
     pub fn print(self: Self) void {
         std.debug.print("bind {s} = ", .{self.id});
-        self.body.as.print();
+        self.body.print();
         std.debug.print(" in (", .{});
-        self.closure.as.print();
+        self.closure.print();
         std.debug.print(")", .{});
     }
 };
@@ -83,7 +83,7 @@ pub const FnStdExpr = struct {
     }
 
     pub fn print(self: Self) void {
-        self.body.as.print();
+        self.body.print();
     }
 };
 
@@ -103,6 +103,8 @@ pub const ExprTag = enum {
 };
 
 pub const Expr = struct {
+    const Self = @This();
+
     as: ExprAs,
     cursor: Cursor,
     content: []const u8,
@@ -252,6 +254,55 @@ pub const Expr = struct {
             .file_path = l.file_path,
         };
     }
+
+    pub fn is_int(self: Self) bool {
+        if (self.tag() != .arith) return false;
+        return self.as.arith.tag() == .constant;
+    }
+
+    pub fn is_str(self: Self) bool {
+        if (self.tag() != .arith) return false;
+        return self.as.arith.tag() == .str;
+    }
+
+    pub fn is_bool(self: Self) bool {
+        if (self.tag() != .bool_) return false;
+        return self.as.bool_.tag() == .constant;
+    }
+
+    pub fn is_struct_instance(self: Self) bool {
+        return self.tag() == .struct_instance;
+    }
+
+    pub fn is_void(self: Self) bool {
+        return self.tag() == .void_;
+    }
+
+    pub fn print(self: Self) void {
+        switch (self.as) {
+            .if_ => |expr| expr.print(),
+            .arith => |expr| expr.print(),
+            .bool_ => |expr| expr.print(),
+            .fn_call => |expr| expr.print(),
+            .fn_def => |expr| expr.print(),
+            .var_ => |expr| std.debug.print("{s}", .{expr}),
+            .struct_instance => |expr| expr.print(),
+            .field_access => |expr| expr.print(),
+            .list => |expr| {
+                for (expr.items) |el| {
+                    el.print();
+                    std.debug.print("; \n", .{});
+                }
+            },
+            .void_ => std.debug.print("void", .{}),
+            .struct_ => |expr| expr.print(),
+            .bind => |expr| expr.print(),
+        }
+    }
+
+    pub fn tag(self: Self) ExprTag {
+        return @as(ExprTag, self.as);
+    }
 };
 
 const ExprAs = union(ExprTag) {
@@ -269,55 +320,6 @@ const ExprAs = union(ExprTag) {
     struct_instance: StructInstanceExpr,
     field_access: FieldAccessExpr,
     void_: void,
-
-    pub fn is_int(self: Self) bool {
-        if (self.tag() != .arith) return false;
-        return self.arith.tag() == .constant;
-    }
-
-    pub fn is_str(self: Self) bool {
-        if (self.tag() != .arith) return false;
-        return self.arith.tag() == .str;
-    }
-
-    pub fn is_bool(self: Self) bool {
-        if (self.tag() != .bool_) return false;
-        return self.bool_.tag() == .constant;
-    }
-
-    pub fn is_struct_instance(self: Self) bool {
-        return self.tag() == .struct_instance;
-    }
-
-    pub fn is_void(self: Self) bool {
-        return self.tag() == .void_;
-    }
-
-    pub fn print(self: Self) void {
-        switch (self) {
-            .if_ => |expr| expr.print(),
-            .arith => |expr| expr.print(),
-            .bool_ => |expr| expr.print(),
-            .fn_call => |expr| expr.print(),
-            .fn_def => |expr| expr.print(),
-            .var_ => |expr| std.debug.print("{s}", .{expr}),
-            .struct_instance => |expr| expr.print(),
-            .field_access => |expr| expr.print(),
-            .list => |expr| {
-                for (expr.items) |el| {
-                    el.as.print();
-                    std.debug.print("; \n", .{});
-                }
-            },
-            .void_ => std.debug.print("void", .{}),
-            .struct_ => |expr| expr.print(),
-            .bind => |expr| expr.print(),
-        }
-    }
-
-    pub fn tag(self: Self) ExprTag {
-        return @as(ExprTag, self);
-    }
 };
 
 pub const StructExpr = struct {
@@ -345,7 +347,7 @@ pub const StructInstanceExpr = struct {
         var it = self.fields.iterator();
         while (it.next()) |value| {
             std.debug.print(".{s} = ", .{value.key_ptr.*});
-            value.value_ptr.as.print();
+            value.value_ptr.print();
             std.debug.print(", ", .{});
         }
         std.debug.print("}}", .{});
@@ -360,7 +362,7 @@ pub const FieldAccessExpr = struct {
 
     pub fn print(self: Self) void {
         std.debug.print("(", .{});
-        self.lhs.as.print();
+        self.lhs.print();
         std.debug.print(".{s})", .{self.field});
     }
 };
@@ -377,7 +379,7 @@ pub const FnCallExpr = struct {
         std.debug.print("{s} (", .{self.name});
         for (self.args.items) |arg| {
             std.debug.print(" ", .{});
-            arg.as.print();
+            arg.print();
             std.debug.print(",", .{});
         }
         std.debug.print(")", .{});
@@ -397,22 +399,22 @@ pub const IfExpr = struct {
 
     pub fn print(self: Self) void {
         std.debug.print("if (", .{});
-        self.eval.as.print();
+        self.eval.print();
         std.debug.print(") ", .{});
-        self.then.as.print();
+        self.then.print();
         std.debug.print("\n", .{});
         std.debug.assert(self.elseif_evals.items.len == self.elseif_thens.items.len);
         for (self.elseif_evals.items, self.elseif_thens.items) |eval, then| {
             std.debug.print("elseif (", .{});
-            eval.as.print();
+            eval.print();
             std.debug.print(") ", .{});
             // std.debug.print("{{", .{});
-            then.as.print();
+            then.print();
             std.debug.print("\n", .{});
         }
 
         std.debug.print("else ", .{});
-        self.else_.as.print();
+        self.else_.print();
         // std.debug.print("", .{});
     }
 };
@@ -456,9 +458,9 @@ pub const BinOp = struct {
 
     pub fn print(self: Self, str: []const u8) void {
         std.debug.print("(", .{});
-        self.lhs.as.print();
+        self.lhs.print();
         std.debug.print(" {s} ", .{str});
-        self.rhs.as.print();
+        self.rhs.print();
 
         std.debug.print(")", .{});
     }
@@ -471,9 +473,9 @@ pub const BinCmpExpr = struct {
     rhs: *const Expr,
 
     pub fn print(self: Self, op: []const u8) void {
-        self.lhs.as.print();
+        self.lhs.print();
         std.debug.print(" {s} ", .{op});
-        self.rhs.as.print();
+        self.rhs.print();
     }
 };
 

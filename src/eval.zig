@@ -136,10 +136,10 @@ pub fn build_context(
     content: []const u8,
     file_path: []const u8,
 ) !Context {
-    assert_of_type(program, program.as.tag() == .list);
+    assert_of_type(program, program.tag() == .list);
     var functions: Funs = .empty;
     for (program.as.list.items) |expr| {
-        if (expr.as.tag() == .fn_def) {
+        if (expr.tag() == .fn_def) {
             try functions.put(alloc, expr.as.fn_def.name, expr.as.fn_def);
         }
     }
@@ -235,7 +235,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
         },
         .field_access => |field_access| {
             const elhs = eval(field_access.lhs.*, ctx, local_vars);
-            assert_of_type(elhs, elhs.as.tag() == .struct_instance);
+            assert_of_type(elhs, elhs.tag() == .struct_instance);
             return elhs.as.struct_instance.fields.get(field_access.field) orelse {
                 panic("tried accessing {s} in struct {s} but do not exist", .{
                     field_access.field,
@@ -252,15 +252,15 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
     const id = bind.id;
     const ebody = eval(bind.body.*, ctx, local_vars);
     const body: Var =
-        if (ebody.as.is_int())
+        if (ebody.is_int())
             .{ .int = ebody.as.arith.constant }
-        else if (ebody.as.is_bool())
+        else if (ebody.is_bool())
             .{ .bool_ = ebody.as.bool_.constant }
-        else if (ebody.as.is_struct_instance())
+        else if (ebody.is_struct_instance())
             .{ .struct_instance = ebody.as.struct_instance }
-        else if (ebody.as.is_str())
+        else if (ebody.is_str())
             .{ .str = ebody.as.arith.str }
-        else if (ebody.as.is_void())
+        else if (ebody.is_void())
             .{ .void_ = {} }
         else
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
@@ -287,12 +287,12 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
         const arg_eval = eval(arg, ctx, local_vars);
-        assert_of_type(arg_eval, arg_eval.as.tag() == .bool_ or arg_eval.as.tag() == .arith);
-        const var_: Var = if (arg_eval.as.tag() == .bool_)
+        assert_of_type(arg_eval, arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
+        const var_: Var = if (arg_eval.tag() == .bool_)
             .{ .bool_ = arg_eval.as.bool_.constant }
-        else if (arg_eval.as.tag() == .arith and arg_eval.as.arith.tag() == .constant)
+        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .constant)
             .{ .int = arg_eval.as.arith.constant }
-        else if (arg_eval.as.tag() == .arith and arg_eval.as.arith.tag() == .str)
+        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .str)
             .{ .str = arg_eval.as.arith.str }
         else
             panic("unhandled case", .{});
@@ -354,7 +354,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Ex
 
 fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     const cond = eval(expr.eval.*, ctx, local_vars);
-    assert_of_type(cond, cond.as.tag() == .bool_);
+    assert_of_type(cond, cond.tag() == .bool_);
     assert_of_type(cond, cond.as.bool_.tag() == .constant);
     if (cond.as.bool_.constant)
         return eval(expr.then.*, ctx, local_vars);
@@ -383,8 +383,8 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
             const lhs = eval(op.lhs.*, ctx, local_vars);
             const rhs = eval(op.rhs.*, ctx, local_vars);
 
-            assert_of_type(lhs, lhs.as.tag() == .arith);
-            assert_of_type(rhs, rhs.as.tag() == .arith);
+            assert_of_type(lhs, lhs.tag() == .arith);
+            assert_of_type(rhs, rhs.tag() == .arith);
             assert_of_type(lhs, lhs.as.arith == .constant);
             assert_of_type(rhs, rhs.as.arith == .constant);
             return switch (expr) {
@@ -430,9 +430,9 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Exp
             const lhs = eval(eql_expr.lhs.*, ctx, local_vars);
             const rhs = eval(eql_expr.rhs.*, ctx, local_vars);
 
-            assert_of_type(lhs, lhs.as.tag() == .bool_ or lhs.as.tag() == .arith);
-            assert_of_type(rhs, rhs.as.tag() == .bool_ or rhs.as.tag() == .arith);
-            assert_of_type(lhs, lhs.as.tag() == rhs.as.tag());
+            assert_of_type(lhs, lhs.tag() == .bool_ or lhs.tag() == .arith);
+            assert_of_type(rhs, rhs.tag() == .bool_ or rhs.tag() == .arith);
+            assert_of_type(lhs, lhs.tag() == rhs.tag());
 
             return .{
                 .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } },
