@@ -58,7 +58,7 @@ pub fn register_functions(alloc: Allocator, funs: *Funs) !void {
     }
 }
 
-fn print(vars: Vars, ctx: FnCallCtx) Expr {
+fn print(vars: *Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
@@ -73,7 +73,7 @@ fn print(vars: Vars, ctx: FnCallCtx) Expr {
     };
 }
 
-fn print_int(vars: Vars, ctx: FnCallCtx) Expr {
+fn print_int(vars: *Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("c"));
     const c = vars.get("c").?;
@@ -88,7 +88,7 @@ fn print_int(vars: Vars, ctx: FnCallCtx) Expr {
     };
 }
 
-fn print_str(vars: Vars, ctx: FnCallCtx) Expr {
+fn print_str(vars: *Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 1);
     assert(vars.contains("str"));
     const str = vars.get("str").?;
@@ -103,7 +103,7 @@ fn print_str(vars: Vars, ctx: FnCallCtx) Expr {
     };
 }
 
-fn getc(vars: Vars, ctx: FnCallCtx) Expr {
+fn getc(vars: *Vars, ctx: FnCallCtx) Expr {
     assert(vars.count() == 2);
 
     assert(vars.contains("str"));

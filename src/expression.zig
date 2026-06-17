@@ -68,7 +68,7 @@ pub const Context = struct {
 };
 
 pub const FnBindingExpr = struct {
-    fn_: *const fn (args: Vars, call_ctx: Context) Expr,
+    fn_: *const fn (args: *Vars, call_ctx: Context) Expr,
 };
 
 pub const FnStdExpr = struct {
