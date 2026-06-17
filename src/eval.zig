@@ -266,6 +266,7 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
 
     var bind_vars = local_vars.clone() catch unreachable;
+    defer bind_vars.deinit();
     bind_vars.putNoClobber(id, body) catch unreachable;
     return eval(bind.closure.*, ctx, bind_vars);
 }
@@ -281,6 +282,7 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
         .file_path = ctx.file_path,
     }, fn_def.args.items.len == expr.args.items.len);
     var fn_params: Vars = .init(ctx.alloc);
+    defer fn_params.deinit();
     for (0..expr.args.items.len) |i| {
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
