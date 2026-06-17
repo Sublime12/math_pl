@@ -53,7 +53,7 @@ pub fn main() !void {
     const ctx = try build_context(expr, alloc, source_code, file_path);
     sema(expr, ctx);
 
-    _ = eval(expr, ctx, local_vars);
+    _ = eval(expr, ctx, &local_vars);
     print("\n", .{});
 }
 

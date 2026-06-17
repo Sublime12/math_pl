@@ -192,7 +192,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
     }
 }
 
-pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
+pub fn eval(expr: Expr, ctx: Context, local_vars: *Vars) Expr {
     switch (expr.as) {
         .bool_ => |bool_| {
             return eval_bool(bool_, ctx, local_vars, expr.cursor);
@@ -248,7 +248,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: Vars) Expr {
     }
 }
 
-fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
+fn eval_bind(bind: BindExpr, ctx: Context, local_vars: *Vars) Expr {
     const id = bind.id;
     const ebody = eval(bind.body.*, ctx, local_vars);
     const body: Var =
@@ -265,13 +265,12 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: Vars) Expr {
         else
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
 
-    var bind_vars = local_vars.clone() catch unreachable;
-    defer bind_vars.deinit();
-    bind_vars.putNoClobber(id, body) catch unreachable;
-    return eval(bind.closure.*, ctx, bind_vars);
+    local_vars.putNoClobber(id, body) catch unreachable;
+    defer std.debug.assert(local_vars.remove(id));
+    return eval(bind.closure.*, ctx, local_vars);
 }
 
-fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
+fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Expr {
     const fn_def = ctx.funs.get(expr.name) orelse {
         panic("Called this function {s} but it does not exist\n", .{expr.name});
     };
@@ -299,10 +298,10 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: Vars, cursor: Cursor
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
     }
 
-    return eval_fn(fn_def, ctx, fn_params, cursor);
+    return eval_fn(fn_def, ctx, &fn_params, cursor);
 }
 
-fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars, cursor: Cursor) Expr {
+fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: *Vars, cursor: Cursor) Expr {
     return switch (fn_def.body) {
         .fn_std => |fn_std| eval(fn_std.body.*, ctx, fn_params),
         .fn_binding => |fn_binding| fn_binding.fn_(
@@ -316,7 +315,7 @@ fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: Vars, cursor: Cursor) Expr {
     };
 }
 
-fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
+fn eval_var(expr: []const u8, ctx: Context, local_vars: *Vars, cursor: Cursor) Expr {
     const value = local_vars.get(expr) orelse panic("var {s} not in context", .{expr});
     return switch (value) {
         .bool_ => |var_| .{
@@ -352,7 +351,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: Vars, cursor: Cursor) Ex
     };
 }
 
-fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
+fn eval_if(expr: IfExpr, ctx: Context, local_vars: *Vars) Expr {
     const cond = eval(expr.eval.*, ctx, local_vars);
     assert_of_type(cond, cond.tag() == .bool_);
     assert_of_type(cond, cond.as.bool_.tag() == .constant);
@@ -371,7 +370,7 @@ fn eval_if(expr: IfExpr, ctx: Context, local_vars: Vars) Expr {
     return eval(expr.else_.*, ctx, local_vars);
 }
 
-fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
+fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Expr {
     switch (expr) {
         .constant => |constant| return .{
             .as = .{ .arith = .{ .constant = constant } },
@@ -418,7 +417,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: Vars, cursor: Cursor) E
     }
 }
 
-fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: Vars, cursor: Cursor) Expr {
+fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Expr {
     switch (expr) {
         .constant => |const_| return .{
             .as = .{ .bool_ = .{ .constant = const_ } },
