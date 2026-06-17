@@ -1,4 +1,6 @@
 let fib = fn n -> 
+  # added comment to the fib function
+  # this implementation is not performant
   if n == 0 then 0
   elseif n == 1 then 1
   else fib(n - 1,) + fib(n - 2,)
