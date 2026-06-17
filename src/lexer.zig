@@ -523,6 +523,7 @@ test "lex string" {
         //       x                  x        x    x
         \\ """"""bon "abc" x"""""" "amis "
         \\ ""a""
+        \\ # the lexer must ignore this line
         \\ "a\n"
     ;
     var l = Lexer.init(source_code, "test.zig");
