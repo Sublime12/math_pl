@@ -154,7 +154,11 @@ pub const Lexer = struct {
 
     pub fn next(l: *Lexer) bool {
         l.previous_cursor = l.cursor;
-        l.trim_left();
+
+        while (true) {
+            l.trim_left();
+            if (l.start_with_comment()) l.drop_line() else break;
+        }
 
         const x_opt = l.next_char();
         if (x_opt == null) {
@@ -388,6 +392,14 @@ pub const Lexer = struct {
         return l.content[l.cursor.pos + 1];
     }
 
+    fn drop_line(l: *Lexer) void {
+        while (l.cursor.pos < l.content.len and l.next_char() != '\n') {}
+    }
+
+    fn start_with_comment(l: *Lexer) bool {
+        return l.current_char() == '#';
+    }
+
     fn is_ln(c: u8) bool {
         return c == '\n';
     }
@@ -510,6 +522,7 @@ test "lex string" {
         //       x                  x        x    x
         \\ """"""bon "abc" x"""""" "amis "
         \\ ""a""
+        \\ # the lexer must ignore this line
         \\ "a\n"
     ;
     var l = Lexer.init(source_code, "test.zig");
