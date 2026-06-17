@@ -265,8 +265,6 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: *Vars) Expr {
         else
             panic("body must be evaluated of type int or bool or struct_instance or str", .{});
 
-    // var bind_vars = local_vars.clone() catch unreachable;
-    // defer bind_vars.deinit();
     local_vars.putNoClobber(id, body) catch unreachable;
     defer std.debug.assert(local_vars.remove(id));
     return eval(bind.closure.*, ctx, local_vars);
