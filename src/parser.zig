@@ -106,7 +106,7 @@ pub const Parser = struct {
             lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = Expr.create_arith(.{ .str = l.name.as_str(l.content) }, l);
+            lhs.* = Expr.create_str(l.name.as_str(l.content), l);
             l.nexti();
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
@@ -149,7 +149,7 @@ pub const Parser = struct {
                 },
                 .str => blk: {
                     l.nexti();
-                    break :blk Expr.create_arith(.{ .str = current_name }, l);
+                    break :blk Expr.create_str(current_name, l);
                 },
                 .oparen => blk: {
                     l.nexti();
@@ -392,13 +392,11 @@ test "parse print_str function" {
     const lhs = arg.as.arith.plus.lhs;
     const rhs = arg.as.arith.plus.rhs;
 
-    try expect(.arith, lhs.tag());
-    try expect(.str, lhs.as.arith.tag());
-    try expectStrings("bonjour", lhs.as.arith.str);
+    try expect(.str, lhs.tag());
+    try expectStrings("bonjour", lhs.as.str);
 
-    try expect(.arith, rhs.tag());
-    try expect(.str, rhs.as.arith.tag());
-    try expectStrings("papa", rhs.as.arith.str);
+    try expect(.str, rhs.tag());
+    try expectStrings("papa", rhs.as.str);
 }
 
 test "parse function definition" {
@@ -459,14 +457,12 @@ test "parse if expression" {
     try expect(1, rhs.as.arith.constant);
 
     const then_node = if_expr.as.if_.then.*;
-    try expect(.arith, then_node.tag());
-    try expect(.str, then_node.as.arith.tag());
-    try expectStrings("yes", then_node.as.arith.str);
+    try expect(.str, then_node.tag());
+    try expectStrings("yes", then_node.as.str);
 
     const else_node = if_expr.as.if_.else_.*;
-    try expect(.arith, else_node.tag());
-    try expect(.str, else_node.as.arith.tag());
-    try expectStrings("no", else_node.as.arith.str);
+    try expect(.str, else_node.tag());
+    try expectStrings("no", else_node.as.str);
 }
 
 test "parse nested bind expressions" {
@@ -561,9 +557,8 @@ test "parse struct instance" {
     try expect(.eql, cond.as.bool_.tag());
 
     const then_branch = field_z.as.if_.then.*;
-    try expect(.arith, then_branch.tag());
-    try expect(.str, then_branch.as.arith.tag());
-    try expectStrings("bonjour", then_branch.as.arith.str);
+    try expect(.str, then_branch.tag());
+    try expectStrings("bonjour", then_branch.as.str);
 
     const else_branch = field_z.as.if_.else_.*;
     try expect(.fn_call, else_branch.tag());

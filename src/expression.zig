@@ -99,6 +99,7 @@ pub const ExprTag = enum {
     struct_,
     struct_instance,
     field_access,
+    str,
     void_,
 };
 
@@ -203,6 +204,15 @@ pub const Expr = struct {
         };
     }
 
+    pub fn create_str(str: []const u8, l: *const Lexer) Expr {
+        return .{
+            .as = .{ .str = str },
+            .cursor = l.previous_cursor,
+            .content = l.content,
+            .file_path = l.file_path,
+        };
+    }
+
     pub fn create_bool(op: BoolExpr, l: *const Lexer) Expr {
         return .{
             .as = .{ .bool_ = op },
@@ -262,7 +272,7 @@ pub const Expr = struct {
 
     pub fn is_str(self: Self) bool {
         if (self.tag() != .arith) return false;
-        return self.as.arith.tag() == .str;
+        return self.tag() == .str;
     }
 
     pub fn is_bool(self: Self) bool {
@@ -295,6 +305,7 @@ pub const Expr = struct {
                 }
             },
             .void_ => std.debug.print("void", .{}),
+            .str => |expr| std.debug.print("{s}", .{expr}),
             .struct_ => |expr| expr.print(),
             .bind => |expr| expr.print(),
         }
@@ -319,6 +330,7 @@ const ExprAs = union(ExprTag) {
     struct_: StructExpr,
     struct_instance: StructInstanceExpr,
     field_access: FieldAccessExpr,
+    str: []const u8,
     void_: void,
 };
 
@@ -424,7 +436,7 @@ const ArithTag = enum {
     minus,
     plus,
     constant,
-    str,
+    // str,
 };
 
 pub const ArithExpr = union(ArithTag) {
@@ -434,7 +446,7 @@ pub const ArithExpr = union(ArithTag) {
     minus: BinOp,
     plus: BinOp,
     constant: i32,
-    str: []const u8,
+    // str: []const u8,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -442,7 +454,7 @@ pub const ArithExpr = union(ArithTag) {
             .minus => |expr| expr.print("-"),
             .plus => |expr| expr.print("+"),
             .constant => |expr| std.debug.print("{}", .{expr}),
-            .str => |expr| std.debug.print("s\"{s}\"", .{expr}),
+            // .str => |expr| std.debug.print("s\"{s}\"", .{expr}),
         }
     }
 
