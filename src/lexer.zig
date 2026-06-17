@@ -157,8 +157,7 @@ pub const Lexer = struct {
 
         while (true) {
             l.trim_left();
-            if (l.start_with_comment()) l.drop_line()
-            else break;
+            if (l.start_with_comment()) l.drop_line() else break;
         }
 
         const x_opt = l.next_char();
