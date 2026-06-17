@@ -337,7 +337,7 @@ pub const Lexer = struct {
                     }
                 }
                 // print("pos here: {}, count: {}, delimiter: {}\n", .{ l.cursor.pos, count, nb_delimiter });
-                if (count != nb_delimiter) {
+                if (count < nb_delimiter) {
                     // This is not the end of the string
                     // so we account the "" as in the string
                     // print("name: {s}\n", .{l.name.asStr(l.content)});
@@ -345,7 +345,9 @@ pub const Lexer = struct {
                         l.name.extend();
                     }
                 } else {
-                    l.name.extend();
+                    const nb_extend = count - nb_delimiter + 1;
+                    for (0..nb_extend) |_|
+                        l.name.extend();
                     break :loop;
                 }
             } else l.name.extend();
