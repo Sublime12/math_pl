@@ -331,16 +331,12 @@ pub const Lexer = struct {
                         count += 1;
                         _ = l.next_char();
                     } else {
-                        // print("extend here???\n", .{});
-                        // l.name.extend();
                         break;
                     }
                 }
-                // print("pos here: {}, count: {}, delimiter: {}\n", .{ l.cursor.pos, count, nb_delimiter });
                 if (count < nb_delimiter) {
                     // This is not the end of the string
                     // so we account the "" as in the string
-                    // print("name: {s}\n", .{l.name.asStr(l.content)});
                     for (0..count) |_| {
                         l.name.extend();
                     }
