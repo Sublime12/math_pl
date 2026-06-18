@@ -147,7 +147,7 @@ pub const Parser = struct {
                 .int => blk: {
                     l.nexti();
                     break :blk Expr.create_arith(.{ .int = int_value.? }, l);
-                }, 
+                },
                 .float => blk: {
                     l.nexti();
                     break :blk Expr.create_arith(.{ .float = float_value.? }, l);

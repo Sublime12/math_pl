@@ -100,7 +100,8 @@ pub const Lexer = struct {
 
             if (builtin.mode != .Debug)
                 std.process.exit(1)
-            else panic("", .{});
+            else
+                panic("", .{});
         }
     }
 
@@ -623,7 +624,6 @@ test "lex floats" {
     l.nexti();
     try expectEqual(.end, l.token);
 }
-
 
 test "lex booleans" {
     const source_code =

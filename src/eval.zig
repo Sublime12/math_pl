@@ -341,7 +341,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: *Vars, cursor: Cursor) E
             .cursor = cursor,
             .file_path = ctx.file_path,
         },
-        .float=> |var_| .{
+        .float => |var_| .{
             .as = .{ .arith = .{ .float = var_ } },
             .content = ctx.content,
             .cursor = cursor,
@@ -451,7 +451,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                     },
                     .plus => .{
                         .as = .{ .arith = .{
-                            .float = lhs.as.arith.float + rhs.as.arith.float ,
+                            .float = lhs.as.arith.float + rhs.as.arith.float,
                         } },
                         .content = ctx.content,
                         .cursor = cursor,
@@ -459,7 +459,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                     },
                     .minus => .{
                         .as = .{ .arith = .{
-                            .float = lhs.as.arith.float - rhs.as.arith.float ,
+                            .float = lhs.as.arith.float - rhs.as.arith.float,
                         } },
                         .content = ctx.content,
                         .cursor = cursor,
