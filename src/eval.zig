@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const expression_pkg = @import("expression.zig");
 const stdlib_pkg = @import("stdlib.zig");
@@ -70,7 +71,7 @@ pub fn sema(program: Expr, ctx: Context) void {
                     sema(expr.lhs.*, ctx);
                     sema(expr.rhs.*, ctx);
                 },
-                .constant, .str => {},
+                .constant => {},
             }
         },
         .bool_ => |bool_expr| {
@@ -108,7 +109,7 @@ pub fn sema(program: Expr, ctx: Context) void {
             sema(if_expr.then.*, ctx);
             sema(if_expr.else_.*, ctx);
         },
-        .struct_, .var_, .void_ => {},
+        .struct_, .var_, .void_, .str => {},
     }
 }
 
@@ -126,7 +127,10 @@ fn assert_of_type(value: Expr, ok: bool) void {
             value.cursor.row,
             value.cursor.col,
         });
-        std.process.exit(1);
+        if (builtin.mode != .Debug)
+            std.process.exit(1)
+        else
+            panic("", .{});
     }
 }
 
@@ -166,7 +170,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
                     try add_structs(arith_expr.lhs.*, ctx);
                     try add_structs(arith_expr.rhs.*, ctx);
                 },
-                .constant, .str => {},
+                .constant => {},
             }
         },
         .bool_ => |expr| {
@@ -186,6 +190,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
                 try add_structs(sub_expr, ctx);
             }
         },
+        .str => {},
         // if you need to add structs for more elements,
         // you can finish implement switch for all other types of expr
         else => {},
@@ -245,6 +250,7 @@ pub fn eval(expr: Expr, ctx: Context, local_vars: *Vars) Expr {
         },
         .bind => |bind| return eval_bind(bind, ctx, local_vars),
         .void_ => return expr,
+        .str => return expr,
     }
 }
 
@@ -259,7 +265,7 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: *Vars) Expr {
         else if (ebody.is_struct_instance())
             .{ .struct_instance = ebody.as.struct_instance }
         else if (ebody.is_str())
-            .{ .str = ebody.as.arith.str }
+            .{ .str = ebody.as.str }
         else if (ebody.is_void())
             .{ .void_ = {} }
         else
@@ -286,13 +292,16 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: *Vars, cursor: Curso
         const arg = expr.args.items[i];
         const arg_name = fn_def.args.items[i];
         const arg_eval = eval(arg, ctx, local_vars);
-        assert_of_type(arg_eval, arg_eval.tag() == .bool_ or arg_eval.tag() == .arith);
+        assert_of_type(
+            arg_eval,
+            arg_eval.tag() == .bool_ or arg_eval.tag() == .arith or arg_eval.tag() == .str,
+        );
         const var_: Var = if (arg_eval.tag() == .bool_)
             .{ .bool_ = arg_eval.as.bool_.constant }
         else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .constant)
             .{ .int = arg_eval.as.arith.constant }
-        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .str)
-            .{ .str = arg_eval.as.arith.str }
+        else if (arg_eval.tag() == .str)
+            .{ .str = arg_eval.as.str }
         else
             panic("unhandled case", .{});
         fn_params.putNoClobber(arg_name, var_) catch unreachable;
@@ -337,7 +346,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: *Vars, cursor: Cursor) E
             .file_path = ctx.file_path,
         },
         .str => |var_| .{
-            .as = .{ .arith = .{ .str = var_ } },
+            .as = .{ .str = var_ },
             .content = ctx.content,
             .cursor = cursor,
             .file_path = ctx.file_path,
@@ -388,31 +397,31 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
             assert_of_type(rhs, rhs.as.arith == .constant);
             return switch (expr) {
                 .prod => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant * rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
                 },
                 .plus => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant + rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant + rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
                 },
                 .minus => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant - rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant - rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
                 },
                 else => unreachable,
             };
-        },
-        .str => |str| return .{
-            .as = .{ .arith = .{ .str = str } },
-            .content = ctx.content,
-            .cursor = cursor,
-            .file_path = ctx.file_path,
         },
     }
 }
