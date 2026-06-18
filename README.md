@@ -23,7 +23,8 @@ Example of correct simple programs can be found in `examples/`,
 ## Usage
 
 ### Prerequisites
-* **Zig 0.15.2** (soon migrating to zig 16)
+* **Zig 0.16.0**
+
 ### Build
 ```bash
 zig build
