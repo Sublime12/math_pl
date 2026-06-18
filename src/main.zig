@@ -22,18 +22,21 @@ const build_context = eval_pkg.build_context;
 const sema = eval_pkg.sema;
 const expect = std.testing.expectEqual;
 
-pub fn main() !void {
+pub fn main(init: std.process.Init) !void {
     const alloc = std.heap.page_allocator;
-    const args = try std.process.argsAlloc(alloc);
+    const io = init.io;
+
+    const args = try init.minimal.args.toSlice(alloc);
     assert(args.len == 2);
 
     const file_path = args[1];
-    const file = try std.fs.cwd().openFile(file_path, .{});
-    defer file.close();
+    const file = try std.Io.Dir.cwd().openFile(io, file_path, .{});
+    defer file.close(io);
 
     const MAX_SIZE = 1024 * 1024;
 
-    const source_code = try file.readToEndAlloc(alloc, MAX_SIZE);
+    var file_reader = file.reader(io, &.{});
+    const source_code = try file_reader.interface.allocRemaining(alloc, .limited(MAX_SIZE));
     defer alloc.free(source_code);
 
     var lexer = Lexer.init(source_code, file_path);
