@@ -397,19 +397,25 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
             assert_of_type(rhs, rhs.as.arith == .constant);
             return switch (expr) {
                 .prod => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant * rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant * rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
                 },
                 .plus => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant + rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant + rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
                 },
                 .minus => .{
-                    .as = .{ .arith = .{ .constant = lhs.as.arith.constant - rhs.as.arith.constant } },
+                    .as = .{ .arith = .{
+                        .constant = lhs.as.arith.constant - rhs.as.arith.constant,
+                    } },
                     .content = ctx.content,
                     .cursor = cursor,
                     .file_path = ctx.file_path,
