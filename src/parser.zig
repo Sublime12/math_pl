@@ -105,6 +105,9 @@ pub const Parser = struct {
         } else if (l.token == .int) {
             lhs.* = Expr.create_arith(.{ .int = l.integer_value.? }, l);
             l.nexti();
+        } else if (l.token == .float) {
+            lhs.* = Expr.create_arith(.{ .float = l.float_value.? }, l);
+            l.nexti();
         } else if (l.token == .str) {
             const escaped_string = try escape_row_string(alloc, l.name.as_str(l.content));
             lhs.* = Expr.create_str(escaped_string, l);
@@ -129,6 +132,7 @@ pub const Parser = struct {
 
             const current_name = l.name.as_str(l.content);
             const int_value = l.integer_value;
+            const float_value = l.float_value;
             const bool_value = l.bool_value;
 
             rhs.* = switch (l.token) {
@@ -143,6 +147,10 @@ pub const Parser = struct {
                 .int => blk: {
                     l.nexti();
                     break :blk Expr.create_arith(.{ .int = int_value.? }, l);
+                }, 
+                .float => blk: {
+                    l.nexti();
+                    break :blk Expr.create_arith(.{ .float = float_value.? }, l);
                 },
                 .bool_ => blk: {
                     l.nexti();
@@ -220,7 +228,7 @@ pub const Parser = struct {
                 l.nexti();
                 return parse_if(l, alloc);
             },
-            .id, .int, .bool_, .str, .oparen => {
+            .id, .int, .float, .bool_, .str, .oparen => {
                 return parse_arith_or_bool_expr(l, alloc);
             },
             .bind => {
