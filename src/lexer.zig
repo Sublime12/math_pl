@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const expression_pkg = @import("expression.zig");
 
@@ -97,7 +98,9 @@ pub const Lexer = struct {
             }
             std.debug.print(RED_TAG ++ "^" ++ END_TAG ++ "\n", .{});
 
-            std.process.exit(1);
+            if (builtin.mode != .Debug)
+                std.process.exit(1)
+            else panic("", .{});
         }
     }
 
