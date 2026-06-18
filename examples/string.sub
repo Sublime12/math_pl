@@ -1,1 +1,1 @@
-print_str(""" Hello "sub\n" """"",);
+print_str("""Hello "sub\\"\nI'm a string""""",);

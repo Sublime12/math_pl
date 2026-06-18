@@ -344,9 +344,12 @@ pub const Parser = struct {
             if (raw_str[i] == '\\') {
                 std.debug.assert(i + 1 < raw_str.len);
                 const next = raw_str[i + 1];
-                if (next == 'n') {
-                    try new_str.append(alloc, '\n');
-                }
+                const to_append: u8 = switch (next) {
+                    'n' => '\n',
+                    '\\' => '\\',
+                    else => panic("unsupported escaped char {c}", .{next}),
+                };
+                try new_str.append(alloc, to_append);
                 i += 1;
             } else {
                 const next = raw_str[i];
