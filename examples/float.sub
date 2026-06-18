@@ -1,3 +1,3 @@
-bind _a = print_float(69.420 + 67.0,) in
+bind _a = print_float(69.420,) in
 print_str("\nEnd printing\n",)
 ;

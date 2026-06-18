@@ -300,6 +300,8 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: *Vars, cursor: Curso
             .{ .bool_ = arg_eval.as.bool_.constant }
         else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .int)
             .{ .int = arg_eval.as.arith.int }
+        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .float)
+            .{ .float = arg_eval.as.arith.float }
         else if (arg_eval.tag() == .str)
             .{ .str = arg_eval.as.str }
         else
@@ -335,6 +337,12 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: *Vars, cursor: Cursor) E
         },
         .int => |var_| .{
             .as = .{ .arith = .{ .int = var_ } },
+            .content = ctx.content,
+            .cursor = cursor,
+            .file_path = ctx.file_path,
+        },
+        .float=> |var_| .{
+            .as = .{ .arith = .{ .float = var_ } },
             .content = ctx.content,
             .cursor = cursor,
             .file_path = ctx.file_path,
@@ -461,6 +469,7 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Ex
 
 const VarTag = enum {
     int,
+    float,
     bool_,
     str,
     struct_instance,
@@ -470,6 +479,7 @@ const VarTag = enum {
 const Var = union(VarTag) {
     const Self = @This();
     int: i32,
+    float: f32,
     bool_: bool,
     str: []const u8,
     struct_instance: StructInstanceExpr,

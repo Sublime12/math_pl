@@ -36,6 +36,16 @@ pub fn register_functions(alloc: Allocator, funs: *Funs) !void {
         try funs.put(alloc, "print_int", print_int_fn);
     }
     {
+        var print_float_args: std.ArrayList([]const u8) = .empty;
+        try print_float_args.append(alloc, "c");
+        const print_float_fn: FnExpr = .{
+            .name = "print_float",
+            .args = print_float_args,
+            .body = .{ .fn_binding = .{ .fn_ = print_float } },
+        };
+        try funs.put(alloc, "print_float", print_float_fn);
+    }
+    {
         var print_str_args: std.ArrayList([]const u8) = .empty;
         try print_str_args.append(alloc, "str");
         const print_str_fn: FnExpr = .{
@@ -80,6 +90,21 @@ fn print_int(vars: *Vars, ctx: FnCallCtx) Expr {
 
     assert(c.tag() == .int);
     std.debug.print("{}", .{c.int});
+    return .{
+        .as = .{ .void_ = {} },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+        .file_path = ctx.file_path,
+    };
+}
+
+fn print_float(vars: *Vars, ctx: FnCallCtx) Expr {
+    assert(vars.count() == 1);
+    assert(vars.contains("c"));
+    const c = vars.get("c").?;
+
+    assert(c.tag() == .float);
+    std.debug.print("{}", .{c.float});
     return .{
         .as = .{ .void_ = {} },
         .cursor = ctx.cursor,
