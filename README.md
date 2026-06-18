@@ -27,7 +27,7 @@ Example of correct simple programs can be found in `examples/`,
 
 ### Build
 ```bash
-zig build
+zig build --release=safe
 ```
 
 ### Run Tests

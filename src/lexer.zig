@@ -1,4 +1,5 @@
 const std = @import("std");
+const builtin = @import("builtin");
 
 const expression_pkg = @import("expression.zig");
 
@@ -41,6 +42,7 @@ pub const Lexer = struct {
     token: TokenKind,
     tokenType: TokenType,
     integer_value: ?i32,
+    float_value: ?f32,
     bool_value: ?bool,
     previous_cursor: Cursor,
     cursor: Cursor,
@@ -55,6 +57,7 @@ pub const Lexer = struct {
             .previous_cursor = .empty,
             .name = .empty,
             .integer_value = null,
+            .float_value = null,
             .bool_value = null,
             .tokenType = .none,
         };
@@ -95,7 +98,10 @@ pub const Lexer = struct {
             }
             std.debug.print(RED_TAG ++ "^" ++ END_TAG ++ "\n", .{});
 
-            std.process.exit(1);
+            if (builtin.mode != .Debug)
+                std.process.exit(1)
+            else
+                panic("", .{});
         }
     }
 
@@ -118,7 +124,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -130,7 +136,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .other;
             },
-            .id, .int, .bool_, .str => |t| {
+            .id, .int, .float, .bool_, .str => |t| {
                 l.token = t;
                 l.tokenType = .primary;
             },
@@ -274,9 +280,6 @@ pub const Lexer = struct {
             } else if (eql("in", l.name.as_str(l.content))) {
                 l.set_token(.in);
                 return true;
-            } else if (eql("self_fn", l.name.as_str(l.content))) {
-                l.set_token(.self_fn);
-                return true;
             } else if (eql("fn", l.name.as_str(l.content))) {
                 l.set_token(.fn_);
                 return true;
@@ -301,6 +304,22 @@ pub const Lexer = struct {
                 l.bool_value = false;
                 return true;
             } else if (std.ascii.isDigit(l.name.as_str(l.content)[0])) {
+                if (l.cursor.pos < l.content.len and l.content[l.cursor.pos] == '.') {
+                    l.name.extend();
+                    _ = l.next_char();
+                    while (l.current_char()) |c| {
+                        if (!isSymbol(c)) break;
+                        _ = l.next_char();
+                        l.name.extend();
+                    }
+
+                    const number = std.fmt.parseFloat(f32, l.name.as_str(l.content)) catch {
+                        panic("Expected float, found {s}", .{l.name.as_str(l.content)});
+                    };
+                    l.float_value = number;
+                    l.set_token(.float);
+                    return true;
+                }
                 const number = std.fmt.parseInt(i32, l.name.as_str(l.content), 10) catch {
                     panic("Expected number, found: {s}", .{l.name.as_str(l.content)});
                 };
@@ -429,13 +448,13 @@ const TokenKind = enum {
     else_,
     let,
     struct_,
-    self_fn,
     then,
     bind,
     in,
 
     // primary
     int,
+    float,
     bool_,
     id,
     str,
@@ -466,11 +485,11 @@ const TokenKind = enum {
             .let => "let",
             .if_ => "if",
             .struct_ => "struct",
-            .self_fn => "self_fn",
             .then => "then",
             .bind => "bind",
             .in => "in",
             .int => "int",
+            .float => "float",
             .bool_ => "bool",
             .id => "identifier",
             .str => "str",
@@ -578,6 +597,29 @@ test "lex integers" {
     try expectStrings("4567", l.name.as_str(l.content));
     try expectEqual(4567, l.integer_value);
     try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectEqual(.end, l.token);
+}
+
+test "lex floats" {
+    const source_code =
+        \\ 123.14 0.0 4567.35
+    ;
+    var l = Lexer.init(source_code, "test.zig");
+
+    l.nexti();
+    try expectEqual(123.14, l.float_value);
+    try expectEqual(.float, l.token);
+
+    l.nexti();
+    try expectEqual(0.0, l.float_value);
+    try expectEqual(.float, l.token);
+
+    l.nexti();
+    try expectStrings("4567.35", l.name.as_str(l.content));
+    try expectEqual(4567.35, l.float_value);
+    try expectEqual(.float, l.token);
 
     l.nexti();
     try expectEqual(.end, l.token);

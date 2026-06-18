@@ -103,7 +103,10 @@ pub const Parser = struct {
                 },
             };
         } else if (l.token == .int) {
-            lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
+            lhs.* = Expr.create_arith(.{ .int = l.integer_value.? }, l);
+            l.nexti();
+        } else if (l.token == .float) {
+            lhs.* = Expr.create_arith(.{ .float = l.float_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
             const escaped_string = try escape_row_string(alloc, l.name.as_str(l.content));
@@ -129,6 +132,7 @@ pub const Parser = struct {
 
             const current_name = l.name.as_str(l.content);
             const int_value = l.integer_value;
+            const float_value = l.float_value;
             const bool_value = l.bool_value;
 
             rhs.* = switch (l.token) {
@@ -142,7 +146,11 @@ pub const Parser = struct {
                 },
                 .int => blk: {
                     l.nexti();
-                    break :blk Expr.create_arith(.{ .constant = int_value.? }, l);
+                    break :blk Expr.create_arith(.{ .int = int_value.? }, l);
+                },
+                .float => blk: {
+                    l.nexti();
+                    break :blk Expr.create_arith(.{ .float = float_value.? }, l);
                 },
                 .bool_ => blk: {
                     l.nexti();
@@ -220,16 +228,8 @@ pub const Parser = struct {
                 l.nexti();
                 return parse_if(l, alloc);
             },
-            .id, .int, .bool_, .str, .oparen => {
+            .id, .int, .float, .bool_, .str, .oparen => {
                 return parse_arith_or_bool_expr(l, alloc);
-            },
-            .self_fn => {
-                const name = l.name.as_str(l.content);
-                l.nexti();
-                l.eat(.oparen);
-                const args = try parse_args(l, alloc);
-                l.eat(.cparen);
-                return Expr.create_fn_call(name, args, l);
             },
             .bind => {
                 return parse_bind(l, alloc);
@@ -385,8 +385,8 @@ test "simple fn expression" {
     try expect(1, args.items.len);
     const arg = args.items[0];
     try expect(.arith, arg.tag());
-    try expect(.constant, arg.as.arith.tag());
-    try expect(97, arg.as.arith.constant);
+    try expect(.int, arg.as.arith.tag());
+    try expect(97, arg.as.arith.int);
 }
 
 test "parse print_str function" {
@@ -478,8 +478,8 @@ test "parse if expression" {
 
     const rhs = eval_node.as.bool_.eql.rhs;
     try expect(.arith, rhs.tag());
-    try expect(.constant, rhs.as.arith.tag());
-    try expect(1, rhs.as.arith.constant);
+    try expect(.int, rhs.as.arith.tag());
+    try expect(1, rhs.as.arith.int);
 
     const then_node = if_expr.as.if_.then.*;
     try expect(.str, then_node.tag());
@@ -566,13 +566,13 @@ test "parse struct instance" {
     const field_x = struct_expr.as.struct_instance.fields.get("x") orelse return std.testing.expect(false);
 
     try expect(.arith, field_x.tag());
-    try expect(.constant, field_x.as.arith.tag());
-    try expect(2, field_x.as.arith.constant);
+    try expect(.int, field_x.as.arith.tag());
+    try expect(2, field_x.as.arith.int);
 
     const field_y = struct_expr.as.struct_instance.fields.get("y") orelse return std.testing.expect(false);
     try expect(.arith, field_y.tag());
-    try expect(.constant, field_y.as.arith.tag());
-    try expect(5, field_y.as.arith.constant);
+    try expect(.int, field_y.as.arith.tag());
+    try expect(5, field_y.as.arith.int);
 
     const field_z = struct_expr.as.struct_instance.fields.get("z") orelse return std.testing.expect(false);
     try expect(.if_, field_z.tag());
@@ -598,8 +598,8 @@ test "parse struct instance" {
     try expect(.plus, lhs_arith.as.arith.tag());
 
     const rhs_arith = arg_expr.as.arith.minus.rhs.*;
-    try expect(.constant, rhs_arith.as.arith.tag());
-    try expect(4, rhs_arith.as.arith.constant);
+    try expect(.int, rhs_arith.as.arith.tag());
+    try expect(4, rhs_arith.as.arith.int);
 }
 
 test "parse field access with dot" {
@@ -660,4 +660,34 @@ test "parse true == false" {
     try expect(.bool_, eql_expr.as.bool_.eql.rhs.tag());
     try expect(.constant, eql_expr.as.bool_.eql.rhs.as.bool_.tag());
     try expect(false, eql_expr.as.bool_.eql.rhs.as.bool_.constant);
+}
+
+test "parse float addition" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ 123.45 + 0.0;
+    ;
+    var lexer = Lexer.init(source_code, "test.zig");
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.as.list.items.len);
+
+    const plus_expr = expr.as.list.items[0];
+    try expect(.arith, plus_expr.tag());
+    try expect(.plus, plus_expr.as.arith.tag());
+
+    const lhs = plus_expr.as.arith.plus.lhs;
+    try expect(.arith, lhs.tag());
+    try expect(.float, lhs.as.arith.tag());
+    try expect(123.45, lhs.as.arith.float);
+
+    const rhs = plus_expr.as.arith.plus.rhs;
+    try expect(.arith, rhs.tag());
+    try expect(.float, rhs.as.arith.tag());
+    try expect(0.0, rhs.as.arith.float);
 }
