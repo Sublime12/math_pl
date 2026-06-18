@@ -223,14 +223,6 @@ pub const Parser = struct {
             .id, .int, .bool_, .str, .oparen => {
                 return parse_arith_or_bool_expr(l, alloc);
             },
-            .self_fn => {
-                const name = l.name.as_str(l.content);
-                l.nexti();
-                l.eat(.oparen);
-                const args = try parse_args(l, alloc);
-                l.eat(.cparen);
-                return Expr.create_fn_call(name, args, l);
-            },
             .bind => {
                 return parse_bind(l, alloc);
             },

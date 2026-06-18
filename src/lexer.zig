@@ -120,7 +120,7 @@ pub const Lexer = struct {
                 l.token = t;
                 l.tokenType = .bool_op;
             },
-            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .self_fn, .bind, .in => |t| {
+            .else_, .if_, .elseif, .struct_, .fn_, .then, .arrow, .let, .bind, .in => |t| {
                 l.token = t;
                 l.tokenType = .keyword;
             },
@@ -276,9 +276,6 @@ pub const Lexer = struct {
             } else if (eql("in", l.name.as_str(l.content))) {
                 l.set_token(.in);
                 return true;
-            } else if (eql("self_fn", l.name.as_str(l.content))) {
-                l.set_token(.self_fn);
-                return true;
             } else if (eql("fn", l.name.as_str(l.content))) {
                 l.set_token(.fn_);
                 return true;
@@ -319,7 +316,6 @@ pub const Lexer = struct {
                     l.set_token(.float);
                     return true;
                 }
-                panic("{c}:{}\n", .{ l.content[l.cursor.pos], l.cursor });
                 const number = std.fmt.parseInt(i32, l.name.as_str(l.content), 10) catch {
                     panic("Expected number, found: {s}", .{l.name.as_str(l.content)});
                 };
@@ -448,7 +444,6 @@ const TokenKind = enum {
     else_,
     let,
     struct_,
-    self_fn,
     then,
     bind,
     in,
@@ -486,7 +481,6 @@ const TokenKind = enum {
             .let => "let",
             .if_ => "if",
             .struct_ => "struct",
-            .self_fn => "self_fn",
             .then => "then",
             .bind => "bind",
             .in => "in",
