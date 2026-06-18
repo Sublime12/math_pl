@@ -106,7 +106,8 @@ pub const Parser = struct {
             lhs.* = Expr.create_arith(.{ .constant = l.integer_value.? }, l);
             l.nexti();
         } else if (l.token == .str) {
-            lhs.* = Expr.create_str(l.name.as_str(l.content), l);
+            const escaped_string = try escape_row_string(alloc, l.name.as_str(l.content));
+            lhs.* = Expr.create_str(escaped_string, l);
             l.nexti();
         } else if (l.token == .bool_) {
             lhs.* = Expr.create_bool(.{ .constant = l.bool_value.? }, l);
@@ -333,6 +334,27 @@ pub const Parser = struct {
         else_.* = try parse_expr(l, alloc);
 
         return Expr.create_if(eval, then, elseif_evals, elseif_thens, else_, l);
+    }
+
+    fn escape_row_string(alloc: Allocator, raw_str: []const u8) ![]const u8 {
+        var i: usize = 0;
+        var new_str: std.ArrayList(u8) = .empty;
+
+        while (i < raw_str.len) {
+            if (raw_str[i] == '\\') {
+                std.debug.assert(i + 1 < raw_str.len);
+                const next = raw_str[i + 1];
+                if (next == 'n') {
+                    try new_str.append(alloc, '\n');
+                }
+                i += 1;
+            } else {
+                const next = raw_str[i];
+                try new_str.append(alloc, next);
+            }
+            i += 1;
+        }
+        return new_str.items;
     }
 };
 
