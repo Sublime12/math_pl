@@ -116,7 +116,7 @@ fn getc(vars: *Vars, ctx: FnCallCtx) Expr {
 
     assert(i.int < str.str.len);
     return .{
-        .as = .{ .arith = .{ .constant = str.str[@intCast(i.int)] } },
+        .as = .{ .arith = .{ .int = str.str[@intCast(i.int)] } },
         .cursor = ctx.cursor,
         .content = ctx.content,
         .file_path = ctx.file_path,

@@ -267,7 +267,7 @@ pub const Expr = struct {
 
     pub fn is_int(self: Self) bool {
         if (self.tag() != .arith) return false;
-        return self.as.arith.tag() == .constant;
+        return self.as.arith.tag() == .int;
     }
 
     pub fn is_str(self: Self) bool {
@@ -433,7 +433,7 @@ const ArithTag = enum {
     prod,
     minus,
     plus,
-    constant,
+    int,
 };
 
 pub const ArithExpr = union(ArithTag) {
@@ -442,14 +442,14 @@ pub const ArithExpr = union(ArithTag) {
     prod: BinOp,
     minus: BinOp,
     plus: BinOp,
-    constant: i32,
+    int: i32,
 
     pub fn print(self: Self) void {
         switch (self) {
             .prod => |expr| expr.print("*"),
             .minus => |expr| expr.print("-"),
             .plus => |expr| expr.print("+"),
-            .constant => |expr| std.debug.print("{}", .{expr}),
+            .int => |expr| std.debug.print("{}", .{expr}),
         }
     }
 

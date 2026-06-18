@@ -71,7 +71,7 @@ pub fn sema(program: Expr, ctx: Context) void {
                     sema(expr.lhs.*, ctx);
                     sema(expr.rhs.*, ctx);
                 },
-                .constant => {},
+                .int => {},
             }
         },
         .bool_ => |bool_expr| {
@@ -170,7 +170,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
                     try add_structs(arith_expr.lhs.*, ctx);
                     try add_structs(arith_expr.rhs.*, ctx);
                 },
-                .constant => {},
+                .int => {},
             }
         },
         .bool_ => |expr| {
@@ -259,7 +259,7 @@ fn eval_bind(bind: BindExpr, ctx: Context, local_vars: *Vars) Expr {
     const ebody = eval(bind.body.*, ctx, local_vars);
     const body: Var =
         if (ebody.is_int())
-            .{ .int = ebody.as.arith.constant }
+            .{ .int = ebody.as.arith.int }
         else if (ebody.is_bool())
             .{ .bool_ = ebody.as.bool_.constant }
         else if (ebody.is_struct_instance())
@@ -298,8 +298,8 @@ fn eval_fn_call(expr: FnCallExpr, ctx: Context, local_vars: *Vars, cursor: Curso
         );
         const var_: Var = if (arg_eval.tag() == .bool_)
             .{ .bool_ = arg_eval.as.bool_.constant }
-        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .constant)
-            .{ .int = arg_eval.as.arith.constant }
+        else if (arg_eval.tag() == .arith and arg_eval.as.arith.tag() == .int)
+            .{ .int = arg_eval.as.arith.int }
         else if (arg_eval.tag() == .str)
             .{ .str = arg_eval.as.str }
         else
@@ -334,7 +334,7 @@ fn eval_var(expr: []const u8, ctx: Context, local_vars: *Vars, cursor: Cursor) E
             .file_path = ctx.file_path,
         },
         .int => |var_| .{
-            .as = .{ .arith = .{ .constant = var_ } },
+            .as = .{ .arith = .{ .int = var_ } },
             .content = ctx.content,
             .cursor = cursor,
             .file_path = ctx.file_path,
@@ -381,8 +381,8 @@ fn eval_if(expr: IfExpr, ctx: Context, local_vars: *Vars) Expr {
 
 fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Expr {
     switch (expr) {
-        .constant => |constant| return .{
-            .as = .{ .arith = .{ .constant = constant } },
+        .int => |constant| return .{
+            .as = .{ .arith = .{ .int = constant } },
             .content = ctx.content,
             .cursor = cursor,
             .file_path = ctx.file_path,
@@ -393,12 +393,12 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
 
             assert_of_type(lhs, lhs.tag() == .arith);
             assert_of_type(rhs, rhs.tag() == .arith);
-            assert_of_type(lhs, lhs.as.arith == .constant);
-            assert_of_type(rhs, rhs.as.arith == .constant);
+            assert_of_type(lhs, lhs.as.arith == .int);
+            assert_of_type(rhs, rhs.as.arith == .int);
             return switch (expr) {
                 .prod => .{
                     .as = .{ .arith = .{
-                        .constant = lhs.as.arith.constant * rhs.as.arith.constant,
+                        .int = lhs.as.arith.int * rhs.as.arith.int,
                     } },
                     .content = ctx.content,
                     .cursor = cursor,
@@ -406,7 +406,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                 },
                 .plus => .{
                     .as = .{ .arith = .{
-                        .constant = lhs.as.arith.constant + rhs.as.arith.constant,
+                        .int = lhs.as.arith.int + rhs.as.arith.int,
                     } },
                     .content = ctx.content,
                     .cursor = cursor,
@@ -414,7 +414,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                 },
                 .minus => .{
                     .as = .{ .arith = .{
-                        .constant = lhs.as.arith.constant - rhs.as.arith.constant,
+                        .int = lhs.as.arith.int - rhs.as.arith.int,
                     } },
                     .content = ctx.content,
                     .cursor = cursor,
@@ -443,7 +443,7 @@ fn eval_bool(expr: BoolExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) Ex
             assert_of_type(lhs, lhs.tag() == rhs.tag());
 
             return .{
-                .as = .{ .bool_ = .{ .constant = (lhs.as.arith.constant == rhs.as.arith.constant) } },
+                .as = .{ .bool_ = .{ .constant = (lhs.as.arith.int == rhs.as.arith.int) } },
                 .content = ctx.content,
                 .cursor = cursor,
                 .file_path = ctx.file_path,
