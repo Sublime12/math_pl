@@ -1,1 +1,1 @@
-print_str(""" Hello "sub" """"",);
+print_str(""" Hello "sub\n" """"",);
