@@ -417,12 +417,6 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                 else => unreachable,
             };
         },
-        // .str => |str| return .{
-        //     .as = .{ .arith = .{ .str = str } },
-        //     .content = ctx.content,
-        //     .cursor = cursor,
-        //     .file_path = ctx.file_path,
-        // },
     }
 }
 

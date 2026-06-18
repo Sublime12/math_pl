@@ -420,14 +420,12 @@ pub const IfExpr = struct {
             std.debug.print("elseif (", .{});
             eval.print();
             std.debug.print(") ", .{});
-            // std.debug.print("{{", .{});
             then.print();
             std.debug.print("\n", .{});
         }
 
         std.debug.print("else ", .{});
         self.else_.print();
-        // std.debug.print("", .{});
     }
 };
 
@@ -436,7 +434,6 @@ const ArithTag = enum {
     minus,
     plus,
     constant,
-    // str,
 };
 
 pub const ArithExpr = union(ArithTag) {
@@ -446,7 +443,6 @@ pub const ArithExpr = union(ArithTag) {
     minus: BinOp,
     plus: BinOp,
     constant: i32,
-    // str: []const u8,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -454,7 +450,6 @@ pub const ArithExpr = union(ArithTag) {
             .minus => |expr| expr.print("-"),
             .plus => |expr| expr.print("+"),
             .constant => |expr| std.debug.print("{}", .{expr}),
-            // .str => |expr| std.debug.print("s\"{s}\"", .{expr}),
         }
     }
 
@@ -515,7 +510,6 @@ pub const BoolExpr = union(BoolTag) {
             .constant => |expr| std.debug.print("{}", .{expr}),
             .eql => |expr| {
                 expr.print("==");
-                // std.debug.print(")", .{});
             },
             .gt => |expr| {
                 expr.print("<");
