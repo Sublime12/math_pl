@@ -434,6 +434,7 @@ const ArithTag = enum {
     minus,
     plus,
     int,
+    float,
 };
 
 pub const ArithExpr = union(ArithTag) {
@@ -443,6 +444,7 @@ pub const ArithExpr = union(ArithTag) {
     minus: BinOp,
     plus: BinOp,
     int: i32,
+    float: f32,
 
     pub fn print(self: Self) void {
         switch (self) {
@@ -450,6 +452,7 @@ pub const ArithExpr = union(ArithTag) {
             .minus => |expr| expr.print("-"),
             .plus => |expr| expr.print("+"),
             .int => |expr| std.debug.print("{}", .{expr}),
+            .float => |expr| std.debug.print("{}", .{expr}),
         }
     }
 

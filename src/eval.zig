@@ -71,7 +71,7 @@ pub fn sema(program: Expr, ctx: Context) void {
                     sema(expr.lhs.*, ctx);
                     sema(expr.rhs.*, ctx);
                 },
-                .int => {},
+                .int, .float => {},
             }
         },
         .bool_ => |bool_expr| {
@@ -170,7 +170,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
                     try add_structs(arith_expr.lhs.*, ctx);
                     try add_structs(arith_expr.rhs.*, ctx);
                 },
-                .int => {},
+                .int, .float => {},
             }
         },
         .bool_ => |expr| {
@@ -383,6 +383,12 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
     switch (expr) {
         .int => |constant| return .{
             .as = .{ .arith = .{ .int = constant } },
+            .content = ctx.content,
+            .cursor = cursor,
+            .file_path = ctx.file_path,
+        },
+        .float => |float| return .{
+            .as = .{ .arith = .{ .float = float } },
             .content = ctx.content,
             .cursor = cursor,
             .file_path = ctx.file_path,
