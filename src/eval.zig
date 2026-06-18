@@ -407,35 +407,67 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
 
             assert_of_type(lhs, lhs.tag() == .arith);
             assert_of_type(rhs, rhs.tag() == .arith);
-            assert_of_type(lhs, lhs.as.arith == .int);
-            assert_of_type(rhs, rhs.as.arith == .int);
-            return switch (expr) {
-                .prod => .{
-                    .as = .{ .arith = .{
-                        .int = lhs.as.arith.int * rhs.as.arith.int,
-                    } },
-                    .content = ctx.content,
-                    .cursor = cursor,
-                    .file_path = ctx.file_path,
-                },
-                .plus => .{
-                    .as = .{ .arith = .{
-                        .int = lhs.as.arith.int + rhs.as.arith.int,
-                    } },
-                    .content = ctx.content,
-                    .cursor = cursor,
-                    .file_path = ctx.file_path,
-                },
-                .minus => .{
-                    .as = .{ .arith = .{
-                        .int = lhs.as.arith.int - rhs.as.arith.int,
-                    } },
-                    .content = ctx.content,
-                    .cursor = cursor,
-                    .file_path = ctx.file_path,
-                },
-                else => unreachable,
-            };
+            assert_of_type(lhs, lhs.as.arith == .int or lhs.as.arith == .float);
+            assert_of_type(rhs, rhs.as.arith == .int or rhs.as.arith == .float);
+            assert_of_type(lhs, lhs.as.arith.tag() == rhs.as.arith.tag());
+
+            if (lhs.as.arith == .int) {
+                return switch (expr) {
+                    .prod => .{
+                        .as = .{ .arith = .{
+                            .int = lhs.as.arith.int * rhs.as.arith.int,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    .plus => .{
+                        .as = .{ .arith = .{
+                            .int = lhs.as.arith.int + rhs.as.arith.int,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    .minus => .{
+                        .as = .{ .arith = .{
+                            .int = lhs.as.arith.int - rhs.as.arith.int,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    else => unreachable,
+                };
+            } else if (lhs.as.arith == .float) {
+                return switch (expr) {
+                    .prod => .{
+                        .as = .{ .arith = .{
+                            .float = lhs.as.arith.float * rhs.as.arith.float,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    .plus => .{
+                        .as = .{ .arith = .{
+                            .float = lhs.as.arith.float + rhs.as.arith.float ,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    .minus => .{
+                        .as = .{ .arith = .{
+                            .float = lhs.as.arith.float - rhs.as.arith.float ,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    else => unreachable,
+                };
+            } else unreachable;
         },
     }
 }
