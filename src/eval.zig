@@ -67,7 +67,7 @@ pub fn sema(program: Expr, ctx: Context) void {
         },
         .arith => |arith_expr| {
             switch (arith_expr) {
-                .plus, .minus, .prod => |expr| {
+                .plus, .minus, .prod, .div => |expr| {
                     sema(expr.lhs.*, ctx);
                     sema(expr.rhs.*, ctx);
                 },
@@ -166,7 +166,7 @@ fn add_structs(program: Expr, ctx: *Context) !void {
     switch (program.as) {
         .arith => |expr| {
             switch (expr) {
-                .plus, .minus, .prod => |arith_expr| {
+                .plus, .minus, .prod, .div => |arith_expr| {
                     try add_structs(arith_expr.lhs.*, ctx);
                     try add_structs(arith_expr.rhs.*, ctx);
                 },
@@ -401,7 +401,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
             .cursor = cursor,
             .file_path = ctx.file_path,
         },
-        .prod, .minus, .plus => |op| {
+        .prod, .div, .minus, .plus => |op| {
             const lhs = eval(op.lhs.*, ctx, local_vars);
             const rhs = eval(op.rhs.*, ctx, local_vars);
 
