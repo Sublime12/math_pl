@@ -1,0 +1,5 @@
+bind _ = print_str("69.420  / 2.0) == ",) in
+bind _a = print_float(69.420 / 2.0,) in
+bind _b = print_str(" ======= (420 / 69) == ",) in
+print_int(420 / 69,)
+;

@@ -175,6 +175,7 @@ pub const Parser = struct {
             if (op_token_type == .arith_op) {
                 const op: ArithExpr = switch (op_token) {
                     .prod => .{ .prod = .{ .lhs = lhs, .rhs = rhs } },
+                    .div => .{ .div = .{ .lhs = lhs, .rhs = rhs } },
                     .plus => .{ .plus = .{ .lhs = lhs, .rhs = rhs } },
                     .minus => .{ .minus = .{ .lhs = lhs, .rhs = rhs } },
                     else => unreachable,
@@ -690,4 +691,34 @@ test "parse float addition" {
     try expect(.arith, rhs.tag());
     try expect(.float, rhs.as.arith.tag());
     try expect(0.0, rhs.as.arith.float);
+}
+
+test "parse float division" {
+    var arena = arena_alloc();
+    defer arena.deinit();
+    const alloc = arena.allocator();
+
+    const source_code =
+        \\ 123.45 / 2.0;
+    ;
+    var lexer = Lexer.init(source_code, "test.zig");
+    var parser = Parser.init(&lexer, alloc);
+    const expr = try parser.parse();
+
+    try expect(.list, expr.tag());
+    try expect(1, expr.as.list.items.len);
+
+    const plus_expr = expr.as.list.items[0];
+    try expect(.arith, plus_expr.tag());
+    try expect(.div, plus_expr.as.arith.tag());
+
+    const lhs = plus_expr.as.arith.div.lhs;
+    try expect(.arith, lhs.tag());
+    try expect(.float, lhs.as.arith.tag());
+    try expect(123.45, lhs.as.arith.float);
+
+    const rhs = plus_expr.as.arith.div.rhs;
+    try expect(.arith, rhs.tag());
+    try expect(.float, rhs.as.arith.tag());
+    try expect(2.0, rhs.as.arith.float);
 }

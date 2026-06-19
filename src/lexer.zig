@@ -116,7 +116,7 @@ pub const Lexer = struct {
 
     fn set_token(l: *Lexer, token: TokenKind) void {
         switch (token) {
-            .minus, .prod, .plus => |t| {
+            .minus, .prod, .div, .plus => |t| {
                 l.token = t;
                 l.tokenType = .arith_op;
             },
@@ -222,6 +222,11 @@ pub const Lexer = struct {
             '*' => {
                 l.clear_append_symbol(x);
                 l.set_token(.prod);
+                return true;
+            },
+            '/' => {
+                l.clear_append_symbol(x);
+                l.set_token(.div);
                 return true;
             },
             '+' => {
@@ -433,6 +438,7 @@ const TokenKind = enum {
     minus,
     plus,
     prod,
+    div,
 
     // parentheses
     oparen,
@@ -474,6 +480,7 @@ const TokenKind = enum {
             .minus => "-",
             .plus => "+",
             .prod => "*",
+            .div => "/",
             .oparen => "(",
             .cparen => ")",
             .obrace => "{",
@@ -802,7 +809,7 @@ test "lex empty input and end token" {
 
 test "lex arithmetic operators and punctuation" {
     const source_code =
-        \\ (1 + 2) * 3 - 4,
+        \\ (1 + 2) * 3 - 4 / 25,
     ;
     var l = Lexer.init(source_code, "test.zig");
 
@@ -840,6 +847,15 @@ test "lex arithmetic operators and punctuation" {
 
     l.nexti();
     try expectEqual(4, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
+    try expectStrings("/", l.name.as_str(l.content));
+    try expectEqual(.div, l.token);
+
+    l.nexti();
+    try expectStrings("25", l.name.as_str(l.content));
+    try expectEqual(25, l.integer_value);
     try expectEqual(.int, l.token);
 
     l.nexti();
