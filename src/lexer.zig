@@ -809,7 +809,7 @@ test "lex empty input and end token" {
 
 test "lex arithmetic operators and punctuation" {
     const source_code =
-        \\ (1 + 2) * 3 - 4,
+        \\ (1 + 2) * 3 - 4 / 25,
     ;
     var l = Lexer.init(source_code, "test.zig");
 
@@ -850,8 +850,18 @@ test "lex arithmetic operators and punctuation" {
     try expectEqual(.int, l.token);
 
     l.nexti();
+    try expectStrings("/", l.name.as_str(l.content));
+    try expectEqual(.div, l.token);
+
+    l.nexti();
+    try expectStrings("25", l.name.as_str(l.content));
+    try expectEqual(25, l.integer_value);
+    try expectEqual(.int, l.token);
+
+    l.nexti();
     try expectStrings(",", l.name.as_str(l.content));
     try expectEqual(.comma, l.token);
+
 
     l.nexti();
     try expectEqual(.end, l.token);
