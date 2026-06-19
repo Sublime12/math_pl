@@ -116,7 +116,7 @@ pub const Lexer = struct {
 
     fn set_token(l: *Lexer, token: TokenKind) void {
         switch (token) {
-            .minus, .prod, .plus => |t| {
+            .minus, .prod, .div, .plus => |t| {
                 l.token = t;
                 l.tokenType = .arith_op;
             },
@@ -222,6 +222,11 @@ pub const Lexer = struct {
             '*' => {
                 l.clear_append_symbol(x);
                 l.set_token(.prod);
+                return true;
+            },
+            '/' => {
+                l.clear_append_symbol(x);
+                l.set_token(.div);
                 return true;
             },
             '+' => {
@@ -433,6 +438,7 @@ const TokenKind = enum {
     minus,
     plus,
     prod,
+    div,
 
     // parentheses
     oparen,
@@ -474,6 +480,7 @@ const TokenKind = enum {
             .minus => "-",
             .plus => "+",
             .prod => "*",
+            .div => "/",
             .oparen => "(",
             .cparen => ")",
             .obrace => "{",
