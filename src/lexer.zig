@@ -862,7 +862,6 @@ test "lex arithmetic operators and punctuation" {
     try expectStrings(",", l.name.as_str(l.content));
     try expectEqual(.comma, l.token);
 
-
     l.nexti();
     try expectEqual(.end, l.token);
 }
