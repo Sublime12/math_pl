@@ -421,6 +421,14 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                         .cursor = cursor,
                         .file_path = ctx.file_path,
                     },
+                    .div => .{
+                        .as = .{ .arith = .{
+                            .int = @divFloor(lhs.as.arith.int, rhs.as.arith.int),
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
                     .plus => .{
                         .as = .{ .arith = .{
                             .int = lhs.as.arith.int + rhs.as.arith.int,
@@ -437,13 +445,21 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                         .cursor = cursor,
                         .file_path = ctx.file_path,
                     },
-                    else => unreachable,
+                    .float, .int => unreachable,
                 };
             } else if (lhs.as.arith == .float) {
                 return switch (expr) {
                     .prod => .{
                         .as = .{ .arith = .{
                             .float = lhs.as.arith.float * rhs.as.arith.float,
+                        } },
+                        .content = ctx.content,
+                        .cursor = cursor,
+                        .file_path = ctx.file_path,
+                    },
+                    .div => .{
+                        .as = .{ .arith = .{
+                            .float = lhs.as.arith.float / rhs.as.arith.float,
                         } },
                         .content = ctx.content,
                         .cursor = cursor,
@@ -465,7 +481,7 @@ fn eval_arith(expr: ArithExpr, ctx: Context, local_vars: *Vars, cursor: Cursor) 
                         .cursor = cursor,
                         .file_path = ctx.file_path,
                     },
-                    else => unreachable,
+                    .float, .int => unreachable,
                 };
             } else unreachable;
         },
