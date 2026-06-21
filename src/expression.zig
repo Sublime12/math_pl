@@ -65,6 +65,8 @@ pub const Context = struct {
     cursor: Cursor,
     content: []const u8,
     file_path: []const u8,
+    io: std.Io,
+    alloc: std.mem.Allocator,
 };
 
 pub const FnBindingExpr = struct {
@@ -271,7 +273,6 @@ pub const Expr = struct {
     }
 
     pub fn is_str(self: Self) bool {
-        if (self.tag() != .arith) return false;
         return self.tag() == .str;
     }
 

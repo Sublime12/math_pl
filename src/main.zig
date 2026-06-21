@@ -53,7 +53,7 @@ pub fn main(init: std.process.Init) !void {
     var local_vars: Vars = .init(alloc);
     defer local_vars.deinit();
 
-    const ctx = try build_context(expr, alloc, source_code, file_path);
+    const ctx = try build_context(expr, alloc, source_code, file_path, io);
     sema(expr, ctx);
 
     _ = eval(expr, ctx, &local_vars);

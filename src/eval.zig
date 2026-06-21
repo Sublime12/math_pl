@@ -32,6 +32,7 @@ const Context = struct {
     funs: Funs,
     structs: Structs,
     alloc: Allocator,
+    io: std.Io,
     content: []const u8,
     file_path: []const u8,
 
@@ -139,6 +140,7 @@ pub fn build_context(
     alloc: Allocator,
     content: []const u8,
     file_path: []const u8,
+    io: std.Io,
 ) !Context {
     assert_of_type(program, program.tag() == .list);
     var functions: Funs = .empty;
@@ -156,6 +158,7 @@ pub fn build_context(
         .structs = .empty,
         .content = content,
         .file_path = file_path,
+        .io = io,
     };
 
     try add_structs(program, &ctx);
@@ -321,6 +324,8 @@ fn eval_fn(fn_def: FnExpr, ctx: Context, fn_params: *Vars, cursor: Cursor) Expr 
                 .content = ctx.content,
                 .cursor = cursor,
                 .file_path = ctx.file_path,
+                .alloc = ctx.alloc,
+                .io = ctx.io,
             },
         ),
     };
