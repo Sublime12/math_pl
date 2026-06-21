@@ -176,7 +176,7 @@ fn read_file(vars: *Vars, ctx: FnCallCtx) Expr {
     const content = file_reader.interface.allocRemaining(ctx.alloc, .limited(MAX_SIZE)) catch unreachable;
 
     return .{
-        .as = .{ .str =  content },
+        .as = .{ .str = content },
         .cursor = ctx.cursor,
         .content = ctx.content,
         .file_path = ctx.file_path,
