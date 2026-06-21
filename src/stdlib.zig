@@ -13,6 +13,7 @@ const Funs = eval_pkg.Funs;
 const FnCallCtx = expression_pkg.Context;
 
 const assert = std.debug.assert;
+const panic = std.debug.panic;
 
 pub fn register_functions(alloc: Allocator, funs: *Funs) !void {
     {
@@ -65,6 +66,16 @@ pub fn register_functions(alloc: Allocator, funs: *Funs) !void {
             .body = .{ .fn_binding = .{ .fn_ = getc } },
         };
         try funs.put(alloc, "getc", getc_fn);
+    }
+    {
+        var read_file_args: std.ArrayList([]const u8) = .empty;
+        try read_file_args.append(alloc, "filepath");
+        const read_file_fn: FnExpr = .{
+            .name = "read_file",
+            .args = read_file_args,
+            .body = .{ .fn_binding = .{ .fn_ = read_file } },
+        };
+        try funs.put(alloc, "read_file", read_file_fn);
     }
 }
 
@@ -142,6 +153,30 @@ fn getc(vars: *Vars, ctx: FnCallCtx) Expr {
     assert(i.int < str.str.len);
     return .{
         .as = .{ .arith = .{ .int = str.str[@intCast(i.int)] } },
+        .cursor = ctx.cursor,
+        .content = ctx.content,
+        .file_path = ctx.file_path,
+    };
+}
+
+fn read_file(vars: *Vars, ctx: FnCallCtx) Expr {
+    assert(vars.count() == 1);
+
+    assert(vars.contains("filepath"));
+    const filepath = vars.get("filepath").?;
+    assert(filepath.tag() == .str);
+
+    const file = std.Io.Dir.cwd().openFile(ctx.io, filepath.str, .{}) catch {
+        panic("filepath {s} does not exist", .{filepath.str});
+    };
+
+    const MAX_SIZE = 1024 * 1024;
+
+    var file_reader = file.reader(ctx.io, &.{});
+    const content = file_reader.interface.allocRemaining(ctx.alloc, .limited(MAX_SIZE)) catch unreachable;
+
+    return .{
+        .as = .{ .str =  content },
         .cursor = ctx.cursor,
         .content = ctx.content,
         .file_path = ctx.file_path,
